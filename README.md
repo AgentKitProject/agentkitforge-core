@@ -53,6 +53,23 @@ node dist/cli/index.js render-draft ./draft.json ./rendered-agentkit --force
 
 Draft rendering validates the JSON structure before writing files. Rendered kits include the standard manifest, entrypoint Markdown files, README, LICENSE, CHANGELOG, skills, and any draft policies, examples, or templates.
 
+Prepare a provider-neutral AI draft request:
+
+```bash
+node dist/cli/index.js draft-request \
+  --request "Build a financial review kit for monthly workbook review." \
+  --level trusted \
+  --domain Finance \
+  --target-user analyst \
+  --out draft-request.json
+```
+
+The command writes deterministic instructions, prompt text, and the expected `AgentKitDraft` JSON schema. It does not call OpenAI or any other provider. A future app can send `draft-request.json` to an AI provider, validate the returned `AgentKitDraft` JSON, then render it:
+
+```bash
+node dist/cli/index.js render-draft draft.json ./my-kit --force
+```
+
 Validate an Agent Kit:
 
 ```bash

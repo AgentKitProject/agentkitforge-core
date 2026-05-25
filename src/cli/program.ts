@@ -1,5 +1,7 @@
 import { Command } from "commander";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { createAgentKitDraftRequest } from "../builder/draftRequest.js";
 import { renderAgentKitDraft } from "../draft/render.js";
 import { exportOneFile } from "../export/onefile.js";
 import { createAgentKit } from "../init/create.js";
@@ -103,6 +105,38 @@ export function createCliProgram(): Command {
     );
 
   program
+    .command("draft-request")
+    .requiredOption("--request <text>", "Natural language Agent Kit request")
+    .requiredOption("--out <file>", "Output JSON request file")
+    .option("--domain <domain>", "Domain or subject area")
+    .option("--target-user <value>", "Target user. Repeat for multiple users.", collectValues, [])
+    .option("--level <level>", "Desired validation level", "local-valid")
+    .action(
+      async (options: {
+        request: string;
+        out: string;
+        domain?: string;
+        targetUser: string[];
+        level: string;
+      }) => {
+        if (!profiles.includes(options.level)) {
+          throw new Error(`Invalid validation level: ${options.level}`);
+        }
+
+        const request = createAgentKitDraftRequest({
+          userRequest: options.request,
+          domain: options.domain,
+          targetUsers: options.targetUser,
+          desiredValidationLevel: options.level as AgentKitValidationProfile
+        });
+        const outPath = path.resolve(options.out);
+        await mkdir(path.dirname(outPath), { recursive: true });
+        await writeFile(outPath, `${JSON.stringify(request, null, 2)}\n`, "utf8");
+        console.log(outPath);
+      }
+    );
+
+  program
     .command("package")
     .argument("<path>", "Agent Kit folder")
     .requiredOption("--out <file>", "Output .agentkit.zip file")
@@ -112,4 +146,8 @@ export function createCliProgram(): Command {
     });
 
   return program;
+}
+
+function collectValues(value: string, previous: string[]): string[] {
+  return [...previous, ...value.split(",").map((item) => item.trim()).filter(Boolean)];
 }
