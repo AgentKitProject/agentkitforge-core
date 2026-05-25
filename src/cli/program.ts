@@ -1,4 +1,6 @@
 import { Command } from "commander";
+import { readFile } from "node:fs/promises";
+import { renderAgentKitDraft } from "../draft/render.js";
 import { exportOneFile } from "../export/onefile.js";
 import { createAgentKit } from "../init/create.js";
 import type { AgentKitTemplateName } from "../init/templates.js";
@@ -76,6 +78,29 @@ export function createCliProgram(): Command {
       const outPath = await exportOneFile(kitPath, options.out);
       console.log(outPath);
     });
+
+  program
+    .command("render-draft")
+    .argument("<draft-json-file>", "Agent Kit draft JSON file")
+    .argument("<target-dir>", "Output Agent Kit folder")
+    .option("--force", "Allow rendering into a non-empty directory")
+    .action(
+      async (
+        draftJsonFile: string,
+        targetDir: string,
+        options: {
+          force?: boolean;
+        }
+      ) => {
+        const draftText = await readFile(draftJsonFile, "utf8");
+        const draft = JSON.parse(draftText) as unknown;
+        const result = await renderAgentKitDraft(draft, targetDir, {
+          force: options.force === true
+        });
+
+        console.log(JSON.stringify(result, null, 2));
+      }
+    );
 
   program
     .command("package")

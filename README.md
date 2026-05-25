@@ -45,6 +45,14 @@ node dist/cli/index.js init ./financial-review-kit \
 
 Use `--force` to initialize into a non-empty directory and overwrite generated template files.
 
+Render an Agent Kit draft JSON file:
+
+```bash
+node dist/cli/index.js render-draft ./draft.json ./rendered-agentkit --force
+```
+
+Draft rendering validates the JSON structure before writing files. Rendered kits include the standard manifest, entrypoint Markdown files, README, LICENSE, CHANGELOG, skills, and any draft policies, examples, or templates.
+
 Validate an Agent Kit:
 
 ```bash
