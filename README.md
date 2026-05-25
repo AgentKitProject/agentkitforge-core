@@ -22,10 +22,32 @@ npm test
 
 ## CLI
 
-Validate an Agent Kit:
+Create a blank Agent Kit:
 
 ```bash
 npm run build
+node dist/cli/index.js init ./my-agentkit \
+  --template blank \
+  --id my-agentkit \
+  --name "My Agent Kit" \
+  --description "A starter Agent Kit."
+```
+
+Create a trusted financial review starter kit:
+
+```bash
+node dist/cli/index.js init ./financial-review-kit \
+  --template financial-review \
+  --id financial-review-kit \
+  --name "Financial Review Kit" \
+  --description "Review financial workbooks for structure, formulas, and follow-up risks."
+```
+
+Use `--force` to initialize into a non-empty directory and overwrite generated template files.
+
+Validate an Agent Kit:
+
+```bash
 node dist/cli/index.js validate ./path/to/agentkit --profile local-valid
 ```
 
