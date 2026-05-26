@@ -2,6 +2,8 @@ import { Command } from "commander";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createAgentKitDraftRequest } from "../builder/draftRequest.js";
+import { buildAgentKitContext } from "../context/builder.js";
+import type { AgentKitContextBuildMode, AgentKitContextTarget } from "../context/types.js";
 import { renderAgentKitDraft } from "../draft/render.js";
 import { exportOneFile } from "../export/onefile.js";
 import { createAgentKit } from "../init/create.js";
@@ -12,6 +14,8 @@ import { validateAgentKit } from "../validation/validator.js";
 
 const profiles = ["local-valid", "publishable", "trusted", "verified"];
 const templateNames = ["blank", "financial-review"];
+const contextModes = ["all", "triggered"];
+const contextTargets = ["openai", "chatgpt", "claude", "generic"];
 
 export function createCliProgram(): Command {
   const program = new Command()
@@ -145,9 +149,71 @@ export function createCliProgram(): Command {
       console.log(outPath);
     });
 
+  program
+    .command("build-context")
+    .argument("<kit-path>", "Agent Kit folder")
+    .requiredOption("--out <file>", "Output JSON context file")
+    .option("--task <text>", "User task for triggered matching")
+    .option("--mode <mode>", "Context mode: all|triggered", "triggered")
+    .option("--target <target>", "Context target: openai|chatgpt|claude|generic", "generic")
+    .option("--no-policies", "Exclude policies")
+    .option("--no-templates", "Exclude templates")
+    .option("--no-workflows", "Exclude workflows")
+    .option("--include-references", "Include references")
+    .option("--max-skills <count>", "Maximum skills for triggered mode", parseInteger)
+    .action(
+      async (
+        kitPath: string,
+        options: {
+          out: string;
+          task?: string;
+          mode: string;
+          target: string;
+          policies: boolean;
+          templates: boolean;
+          workflows: boolean;
+          includeReferences?: boolean;
+          maxSkills?: number;
+        }
+      ) => {
+        if (!contextModes.includes(options.mode)) {
+          throw new Error(`Invalid context mode: ${options.mode}`);
+        }
+
+        if (!contextTargets.includes(options.target)) {
+          throw new Error(`Invalid context target: ${options.target}`);
+        }
+
+        const context = await buildAgentKitContext({
+          kitPath,
+          userTask: options.task,
+          mode: options.mode as AgentKitContextBuildMode,
+          target: options.target as AgentKitContextTarget,
+          includePolicies: options.policies,
+          includeTemplates: options.templates,
+          includeWorkflows: options.workflows,
+          includeReferences: options.includeReferences === true,
+          maxSkills: options.maxSkills
+        });
+        const outPath = path.resolve(options.out);
+        await mkdir(path.dirname(outPath), { recursive: true });
+        await writeFile(outPath, `${JSON.stringify(context, null, 2)}\n`, "utf8");
+        console.log(outPath);
+      }
+    );
+
   return program;
 }
 
 function collectValues(value: string, previous: string[]): string[] {
   return [...previous, ...value.split(",").map((item) => item.trim()).filter(Boolean)];
+}
+
+function parseInteger(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`Expected a positive integer, received: ${value}`);
+  }
+
+  return parsed;
 }

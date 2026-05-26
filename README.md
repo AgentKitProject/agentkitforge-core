@@ -95,6 +95,28 @@ Create a `.agentkit.zip` package:
 node dist/cli/index.js package ./path/to/agentkit --out ./agentkit.agentkit.zip
 ```
 
+Build AI-ready context from an Agent Kit:
+
+```bash
+node dist/cli/index.js build-context ./path/to/agentkit \
+  --task "Audit formulas in this workbook." \
+  --mode triggered \
+  --target generic \
+  --out context.json
+```
+
+The context builder does not call OpenAI or any other provider. It creates a JSON payload with:
+
+- `systemContext`: Agent Kit instructions, selected skills, and requested supporting files.
+- `userContext`: the user task, ready to pair with the system context.
+- `includedFiles`: normalized package paths included in the context.
+- `includedSkills`: skill ids included in the context.
+- `warnings`: deterministic fallback or selection warnings.
+
+Use `--mode all` to include every manifest skill. Use `--mode triggered` to match the user task against skill triggers and descriptions. If no skill matches, the builder includes all skills and records a warning.
+
+Policies, templates, and workflows are included by default in the CLI. Use `--no-policies`, `--no-templates`, or `--no-workflows` to exclude them. References are excluded by default; pass `--include-references` when the target workflow needs them.
+
 After this package is installed globally or linked, the same commands are available through `agentkitforge`.
 
 ## Agent Kit Structure

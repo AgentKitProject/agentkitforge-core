@@ -1,0 +1,23 @@
+export type AgentKitContextBuildMode = "all" | "triggered";
+
+export type AgentKitContextTarget = "openai" | "chatgpt" | "claude" | "generic";
+
+export interface AgentKitContextRequest {
+  kitPath: string;
+  userTask?: string;
+  mode: AgentKitContextBuildMode;
+  target: AgentKitContextTarget;
+  includePolicies?: boolean;
+  includeTemplates?: boolean;
+  includeWorkflows?: boolean;
+  includeReferences?: boolean;
+  maxSkills?: number;
+}
+
+export interface AgentKitContextResult {
+  systemContext: string;
+  userContext: string;
+  includedFiles: string[];
+  includedSkills: string[];
+  warnings: string[];
+}
