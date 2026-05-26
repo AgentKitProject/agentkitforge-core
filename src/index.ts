@@ -1,6 +1,7 @@
 export { agentKitManifestSchema, agentKitSkillSchema } from "./schema/agentkit.js";
 export { createAgentKitDraftRequest } from "./builder/draftRequest.js";
 export { createAgentKitBuilderInstructions } from "./builder/instructions.js";
+export { exportAgentKitToCodex } from "./adapters/codex.js";
 export { buildAgentKitContext } from "./context/builder.js";
 export { agentKitDraftSchema, exampleDraftSchema, policyDraftSchema, skillDraftSchema, templateDraftSchema } from "./draft/schema.js";
 export { AgentKitDraftValidationError, renderAgentKitDraft } from "./draft/render.js";
@@ -29,6 +30,7 @@ export type {
   AgentKitContextResult,
   AgentKitContextTarget
 } from "./context/types.js";
+export type { AgentKitTarget, CodexExportOptions, CodexExportResult } from "./adapters/codex.js";
 export type {
   AgentKitManifest,
   AgentKitSkillManifest,

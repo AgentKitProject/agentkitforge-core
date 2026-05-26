@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { exportAgentKitToCodex } from "../adapters/codex.js";
 import { createAgentKitDraftRequest } from "../builder/draftRequest.js";
 import { buildAgentKitContext } from "../context/builder.js";
 import type { AgentKitContextBuildMode, AgentKitContextTarget } from "../context/types.js";
@@ -199,6 +200,26 @@ export function createCliProgram(): Command {
         await mkdir(path.dirname(outPath), { recursive: true });
         await writeFile(outPath, `${JSON.stringify(context, null, 2)}\n`, "utf8");
         console.log(outPath);
+      }
+    );
+
+  program
+    .command("export-codex")
+    .argument("<kit-path>", "Agent Kit folder")
+    .requiredOption("--dest <skills-dir>", "Destination Codex skills directory")
+    .option("--force", "Replace this kit's AgentKitForge-generated Codex skill folders")
+    .action(
+      async (
+        kitPath: string,
+        options: {
+          dest: string;
+          force?: boolean;
+        }
+      ) => {
+        const result = await exportAgentKitToCodex(kitPath, options.dest, {
+          force: options.force === true
+        });
+        console.log(JSON.stringify(result, null, 2));
       }
     );
 
