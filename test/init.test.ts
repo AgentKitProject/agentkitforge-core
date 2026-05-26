@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
@@ -123,8 +123,56 @@ describe("AgentKit init", () => {
       ])
     ).resolves.toBeUndefined();
 
-    await expect(readFile(path.join(kit, "existing.txt"), "utf8")).resolves.toBe("keep\n");
+    await expect(pathExists(path.join(kit, "existing.txt"))).resolves.toBe(false);
     expect((await validateAgentKit(kit, "local-valid")).valid).toBe(true);
+  });
+
+  test("force cleans financial-review files before rendering blank", async () => {
+    const kit = await tempKitPath();
+    await createAgentKit(kit, {
+      template: "financial-review",
+      id: "financial-review",
+      name: "Financial Review",
+      description: "Review financial workbooks."
+    });
+
+    await createAgentKit(kit, {
+      template: "blank",
+      id: "blank-test-kit",
+      name: "Blank Test Kit",
+      description: "A blank test kit.",
+      force: true
+    });
+
+    await expect(pathExists(path.join(kit, "skills", "audit-formulas", "SKILL.md"))).resolves.toBe(false);
+    await expect(pathExists(path.join(kit, "skills", "map-workbook-structure", "SKILL.md"))).resolves.toBe(false);
+    await expect(pathExists(path.join(kit, "policies", "financial-review-guardrails.yaml"))).resolves.toBe(false);
+    await expect(pathExists(path.join(kit, "skills", "first-skill", "SKILL.md"))).resolves.toBe(true);
+    expect((await validateAgentKit(kit, "local-valid")).valid).toBe(true);
+  });
+
+  test("force cleans blank files before rendering financial-review", async () => {
+    const kit = await tempKitPath();
+    await createAgentKit(kit, {
+      template: "blank",
+      id: "blank-test-kit",
+      name: "Blank Test Kit",
+      description: "A blank test kit."
+    });
+
+    await createAgentKit(kit, {
+      template: "financial-review",
+      id: "financial-review",
+      name: "Financial Review",
+      description: "Review financial workbooks.",
+      force: true
+    });
+
+    await expect(pathExists(path.join(kit, "skills", "first-skill", "SKILL.md"))).resolves.toBe(false);
+    await expect(pathExists(path.join(kit, "skills", "audit-formulas", "SKILL.md"))).resolves.toBe(true);
+    await expect(pathExists(path.join(kit, "skills", "map-workbook-structure", "SKILL.md"))).resolves.toBe(true);
+    await expect(pathExists(path.join(kit, "policies", "financial-review-guardrails.yaml"))).resolves.toBe(true);
+    expect((await validateAgentKit(kit, "trusted")).valid).toBe(true);
   });
 });
 
@@ -140,4 +188,13 @@ async function runInitCommand(args: string[]): Promise<void> {
     writeErr: () => undefined
   });
   await program.parseAsync(["init", ...args], { from: "user" });
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
