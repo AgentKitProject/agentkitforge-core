@@ -15,30 +15,54 @@ export const aiProviderTypes: AiProviderType[] = [
 export const modelCatalog: Record<AiProviderType, KnownModel[]> = {
   openai: [
     {
-      id: "gpt-4.1",
-      label: "GPT-4.1",
+      id: "gpt-5.5",
+      label: "GPT-5.5",
       providerTypes: ["openai"],
       recommendedFor: ["kit-use", "draft-generation"],
       supportsStructuredJson: true,
-      notes: "Starter catalog suggestion. Consumers must allow custom OpenAI model IDs."
+      notes: "Current flagship suggestion for complex reasoning, coding, and agentic workflows. Consumers must allow custom OpenAI model IDs."
     },
     {
-      id: "gpt-4.1-mini",
-      label: "GPT-4.1 Mini",
+      id: "gpt-5.4",
+      label: "GPT-5.4",
+      providerTypes: ["openai"],
+      recommendedFor: ["kit-use", "draft-generation"],
+      supportsStructuredJson: true,
+      notes: "Current affordable GPT-5.4 suggestion for coding and professional work."
+    },
+    {
+      id: "gpt-5.4-mini",
+      label: "GPT-5.4 Mini",
       providerTypes: ["openai"],
       recommendedFor: ["kit-use", "fast", "cheap"],
       supportsStructuredJson: true,
-      notes: "Starter catalog suggestion for lower-cost workflows."
+      notes: "Lower-latency, lower-cost suggestion for well-defined kit use and draft iteration."
+    },
+    {
+      id: "gpt-5.4-nano",
+      label: "GPT-5.4 Nano",
+      providerTypes: ["openai"],
+      recommendedFor: ["fast", "cheap"],
+      supportsStructuredJson: true,
+      notes: "Smallest current GPT-5.4 variant suggestion for fast, cost-sensitive tasks."
     }
   ],
   anthropic: [
     {
-      id: "claude-sonnet-4-5",
-      label: "Claude Sonnet 4.5",
+      id: "claude-opus-4-7",
+      label: "Claude Opus 4.7",
       providerTypes: ["anthropic"],
       recommendedFor: ["kit-use", "draft-generation"],
       supportsStructuredJson: true,
-      notes: "Starter catalog suggestion. Verify availability with the Anthropic account used by the app."
+      notes: "Anthropic's most capable generally available Claude model suggestion for complex reasoning and agentic coding."
+    },
+    {
+      id: "claude-sonnet-4-6",
+      label: "Claude Sonnet 4.6",
+      providerTypes: ["anthropic"],
+      recommendedFor: ["kit-use", "draft-generation", "fast"],
+      supportsStructuredJson: true,
+      notes: "Balanced Claude suggestion for speed and intelligence."
     },
     {
       id: "claude-haiku-4-5",
@@ -46,43 +70,59 @@ export const modelCatalog: Record<AiProviderType, KnownModel[]> = {
       providerTypes: ["anthropic"],
       recommendedFor: ["kit-use", "fast", "cheap"],
       supportsStructuredJson: true,
-      notes: "Starter catalog suggestion for faster workflows."
+      notes: "Fast Claude suggestion for lower-latency workflows."
     }
   ],
   gemini: [
     {
-      id: "gemini-2.5-pro",
-      label: "Gemini 2.5 Pro",
+      id: "gemini-3.1-pro-preview",
+      label: "Gemini 3.1 Pro Preview",
       providerTypes: ["gemini"],
       recommendedFor: ["kit-use", "draft-generation"],
       supportsStructuredJson: true,
-      notes: "Starter catalog suggestion. Verify availability with the Gemini API account used by the app."
+      notes: "Gemini 3.1 Pro preview suggestion for advanced multimodal and agentic work."
     },
     {
-      id: "gemini-2.5-flash",
-      label: "Gemini 2.5 Flash",
+      id: "gemini-3.5-flash",
+      label: "Gemini 3.5 Flash",
       providerTypes: ["gemini"],
-      recommendedFor: ["kit-use", "fast", "cheap"],
+      recommendedFor: ["kit-use", "fast"],
       supportsStructuredJson: true,
-      notes: "Starter catalog suggestion for faster workflows."
+      notes: "Stable Gemini 3.5 suggestion for speed, scale, and agentic workflows."
+    },
+    {
+      id: "gemini-3.1-flash-lite",
+      label: "Gemini 3.1 Flash-Lite",
+      providerTypes: ["gemini"],
+      recommendedFor: ["fast", "cheap"],
+      supportsStructuredJson: true,
+      notes: "Stable cost-efficient Gemini 3.1 suggestion for high-throughput workflows."
     }
   ],
   ollama: [
     {
-      id: "llama3.1",
-      label: "Llama 3.1",
+      id: "gpt-oss:20b",
+      label: "gpt-oss 20B",
       providerTypes: ["ollama"],
       recommendedFor: ["kit-use", "local"],
-      supportsStructuredJson: false,
-      notes: "Example local model name. Installed Ollama model IDs vary by machine."
+      supportsStructuredJson: true,
+      notes: "OpenAI open-weight Ollama model suggestion. Installed local model IDs vary by machine."
     },
     {
-      id: "mistral",
-      label: "Mistral",
+      id: "qwen3:30b",
+      label: "Qwen3 30B",
       providerTypes: ["ollama"],
-      recommendedFor: ["fast", "cheap", "local"],
+      recommendedFor: ["kit-use", "draft-generation", "local"],
       supportsStructuredJson: false,
-      notes: "Example local model name. Consumers must allow custom local model IDs."
+      notes: "Strong local reasoning/coding suggestion. JSON reliability depends on local runtime and prompting."
+    },
+    {
+      id: "gemma3:12b",
+      label: "Gemma 3 12B",
+      providerTypes: ["ollama"],
+      recommendedFor: ["kit-use", "fast", "local"],
+      supportsStructuredJson: false,
+      notes: "Local model suggestion. Installed Ollama model IDs vary by machine."
     }
   ],
   "openai-compatible": []
@@ -164,6 +204,18 @@ export function normalizeBaseUrl(
   const trimmed = baseUrl?.trim();
   if (trimmed) {
     return trimmed.replace(/\/+$/, "");
+  }
+
+  if (providerType === "openai") {
+    return "https://api.openai.com/v1";
+  }
+
+  if (providerType === "anthropic") {
+    return "https://api.anthropic.com/v1";
+  }
+
+  if (providerType === "gemini") {
+    return "https://generativelanguage.googleapis.com/v1beta";
   }
 
   if (providerType === "ollama") {
