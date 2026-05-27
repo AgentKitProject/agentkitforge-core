@@ -9,6 +9,18 @@ export { AgentKitDraftValidationError, renderAgentKitDraft } from "./draft/rende
 export { exportOneFile } from "./export/onefile.js";
 export { createAgentKit } from "./init/create.js";
 export { packageAgentKit } from "./package/packager.js";
+export {
+  aiProviderTypes,
+  getDefaultModelForProvider,
+  getKnownModelsForProvider,
+  getProviderCapabilities,
+  isApiKeyRequiredForProvider,
+  isBaseUrlRequiredForProvider,
+  modelCatalog,
+  normalizeBaseUrl,
+  providerSupportsStructuredJson,
+  structuredOutputGuidance
+} from "./providers/catalog.js";
 export { readAgentKit, readYamlFile } from "./package/reader.js";
 export { validateAgentKit } from "./validation/validator.js";
 export { parseSkillMarkdown, validateSkillFile } from "./validation/skill.js";
@@ -33,6 +45,14 @@ export type {
 } from "./context/types.js";
 export type { ClaudeCodeExportOptions, ClaudeCodeExportResult } from "./adapters/claudeCode.js";
 export type { AgentKitTarget, CodexExportOptions, CodexExportResult } from "./adapters/codex.js";
+export type {
+  AiProviderConfigBase,
+  AiProviderConfigShape,
+  AiProviderType,
+  KnownModel,
+  ModelRecommendationTag,
+  ProviderCapabilities
+} from "./providers/types.js";
 export type {
   AgentKitManifest,
   AgentKitSkillManifest,

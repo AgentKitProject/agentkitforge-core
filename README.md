@@ -135,6 +135,20 @@ This adapter creates `<kit-id>-claude-code-plugin/`, writes `.claude-plugin/plug
 
 After this package is installed globally or linked, the same commands are available through `agentkitforge`.
 
+## AI Provider Metadata
+
+AgentKitForge Core defines shared provider and model metadata only. It does not call OpenAI, Anthropic, Gemini, Ollama, OpenAI-compatible servers, or any other provider. It does not store API keys.
+
+The exported provider helpers cover:
+
+- provider types: `openai`, `anthropic`, `gemini`, `ollama`, `openai-compatible`
+- starter known-model suggestions
+- default model suggestions
+- API key and base URL requirements
+- structured JSON capability hints for AgentKitDraft generation
+
+Known models are suggestions, not constraints. Apps and CLIs that consume this package must always allow custom model IDs, especially for Ollama and OpenAI-compatible providers.
+
 ## Agent Kit Structure
 
 ```text
