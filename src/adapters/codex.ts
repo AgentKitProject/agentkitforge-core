@@ -4,7 +4,7 @@ import path from "node:path";
 import type { AgentKitManifest, AgentKitSkillManifest } from "../types.js";
 import { readAgentKit } from "../package/reader.js";
 
-export type AgentKitTarget = "codex";
+export type AgentKitTarget = "codex" | "claude-code";
 
 export interface CodexExportOptions {
   force?: boolean;

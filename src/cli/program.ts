@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { exportAgentKitToClaudeCode } from "../adapters/claudeCode.js";
 import { exportAgentKitToCodex } from "../adapters/codex.js";
 import { createAgentKitDraftRequest } from "../builder/draftRequest.js";
 import { buildAgentKitContext } from "../context/builder.js";
@@ -217,6 +218,26 @@ export function createCliProgram(): Command {
         }
       ) => {
         const result = await exportAgentKitToCodex(kitPath, options.dest, {
+          force: options.force === true
+        });
+        console.log(JSON.stringify(result, null, 2));
+      }
+    );
+
+  program
+    .command("export-claude-code")
+    .argument("<kit-path>", "Agent Kit folder")
+    .requiredOption("--dest <plugins-dir>", "Destination Claude Code plugins directory")
+    .option("--force", "Replace this kit's AgentKitForge-generated Claude Code plugin folder")
+    .action(
+      async (
+        kitPath: string,
+        options: {
+          dest: string;
+          force?: boolean;
+        }
+      ) => {
+        const result = await exportAgentKitToClaudeCode(kitPath, options.dest, {
           force: options.force === true
         });
         console.log(JSON.stringify(result, null, 2));
