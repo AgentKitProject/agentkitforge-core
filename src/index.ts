@@ -1,11 +1,21 @@
 export { agentKitManifestSchema, agentKitSkillSchema } from "./schema/agentkit.js";
 export { createAgentKitDraftRequest } from "./builder/draftRequest.js";
+export { createAgentKitDraftRevisionRequest } from "./builder/revisionRequest.js";
 export { createAgentKitBuilderInstructions } from "./builder/instructions.js";
 export { exportAgentKitToClaudeCode } from "./adapters/claudeCode.js";
 export { exportAgentKitToCodex } from "./adapters/codex.js";
 export { buildAgentKitContext } from "./context/builder.js";
 export { agentKitDraftSchema, exampleDraftSchema, policyDraftSchema, skillDraftSchema, templateDraftSchema } from "./draft/schema.js";
 export { AgentKitDraftValidationError, renderAgentKitDraft } from "./draft/render.js";
+export {
+  addDraftRevision,
+  agentKitDraftRevisionSchema,
+  agentKitDraftSessionSchema,
+  createDraftSession,
+  getCurrentDraftRevision,
+  restoreDraftRevision,
+  validateDraftSession
+} from "./draft/session.js";
 export { findMatchingDomains, getKnownDomains, knownDomains } from "./domains/catalog.js";
 export { exportOneFile } from "./export/onefile.js";
 export { createAgentKit } from "./init/create.js";
@@ -53,6 +63,17 @@ export type {
   AgentKitDraftRequest,
   CreateAgentKitDraftRequestInput
 } from "./builder/draftRequest.js";
+export type {
+  AgentKitDraftRevisionRequest,
+  CreateAgentKitDraftRevisionRequestInput
+} from "./builder/revisionRequest.js";
+export type {
+  AddDraftRevisionInput,
+  AgentKitDraftChangeRequest,
+  AgentKitDraftRevision,
+  AgentKitDraftSession,
+  CreateDraftSessionInput
+} from "./draft/session.js";
 export type {
   AgentKitContextBuildMode,
   AgentKitContextRequest,

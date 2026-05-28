@@ -4,9 +4,11 @@ import path from "node:path";
 import { exportAgentKitToClaudeCode } from "../adapters/claudeCode.js";
 import { exportAgentKitToCodex } from "../adapters/codex.js";
 import { createAgentKitDraftRequest } from "../builder/draftRequest.js";
+import { createAgentKitDraftRevisionRequest } from "../builder/revisionRequest.js";
 import { buildAgentKitContext } from "../context/builder.js";
 import type { AgentKitContextBuildMode, AgentKitContextTarget } from "../context/types.js";
 import { renderAgentKitDraft } from "../draft/render.js";
+import { agentKitDraftSchema } from "../draft/schema.js";
 import { exportOneFile } from "../export/onefile.js";
 import { createAgentKit } from "../init/create.js";
 import type { AgentKitTemplateName } from "../init/templates.js";
@@ -138,6 +140,42 @@ export function createCliProgram(): Command {
           userRequest: options.request,
           domain: options.domain,
           targetUsers: options.targetUser,
+          desiredValidationLevel: options.level as AgentKitValidationProfile
+        });
+        const outPath = path.resolve(options.out);
+        await mkdir(path.dirname(outPath), { recursive: true });
+        await writeFile(outPath, `${JSON.stringify(request, null, 2)}\n`, "utf8");
+        console.log(outPath);
+      }
+    );
+
+  program
+    .command("draft-revision-request")
+    .argument("<current-draft-json-file>", "Current AgentKitDraft JSON file")
+    .requiredOption("--change <text>", "Requested draft change")
+    .requiredOption("--out <file>", "Output JSON revision request file")
+    .option("--original-request <text>", "Original user request")
+    .option("--level <level>", "Desired validation level", "local-valid")
+    .action(
+      async (
+        currentDraftJsonFile: string,
+        options: {
+          change: string;
+          out: string;
+          originalRequest?: string;
+          level: string;
+        }
+      ) => {
+        if (!profiles.includes(options.level)) {
+          throw new Error(`Invalid validation level: ${options.level}`);
+        }
+
+        const currentDraftInput = JSON.parse(await readFile(currentDraftJsonFile, "utf8")) as unknown;
+        const currentDraft = agentKitDraftSchema.parse(currentDraftInput);
+        const request = createAgentKitDraftRevisionRequest({
+          currentDraft,
+          changeRequest: options.change,
+          originalRequest: options.originalRequest,
           desiredValidationLevel: options.level as AgentKitValidationProfile
         });
         const outPath = path.resolve(options.out);

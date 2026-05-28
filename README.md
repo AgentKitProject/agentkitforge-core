@@ -88,6 +88,27 @@ The command writes deterministic instructions, prompt text, and the expected `Ag
 node dist/cli/index.js render-draft draft.json ./my-kit --force
 ```
 
+Prepare a revision request for an existing draft:
+
+```bash
+node dist/cli/index.js draft-revision-request ./draft.json \
+  --change "Add a reusable prepared prompt for monthly workbook review." \
+  --level trusted \
+  --out draft-revision-request.json
+```
+
+Build with AI is designed as an iterative flow:
+
+1. Create a draft request from the user's initial request.
+2. A future app sends that request to an AI provider.
+3. Validate the returned `AgentKitDraft`.
+4. Create an AI Draft Session and store revision v1.
+5. For user changes, create a draft revision request from the current draft.
+6. Validate the returned full updated draft and add a new revision.
+7. Render the current revision into an Agent Kit folder.
+
+Core only builds request/session data. The app performs provider calls.
+
 Validate an Agent Kit:
 
 ```bash
