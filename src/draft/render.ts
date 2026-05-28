@@ -59,6 +59,7 @@ function buildDraftFiles(draft: AgentKitDraft): Array<[string, string]> {
   const policies = [...draft.policies].sort((left, right) => left.id.localeCompare(right.id));
   const examples = [...draft.examples].sort((left, right) => left.id.localeCompare(right.id));
   const templates = [...draft.templates].sort((left, right) => left.id.localeCompare(right.id));
+  const preparedPrompts = [...draft.preparedPrompts].sort((left, right) => left.id.localeCompare(right.id));
   const files: Array<[string, string]> = [
     ["agentkit.yaml", renderManifest(draft, skills)],
     ["AGENTKIT.md", renderAgentInstructions(draft)],
@@ -85,6 +86,10 @@ function buildDraftFiles(draft: AgentKitDraft): Array<[string, string]> {
 
   for (const template of templates) {
     files.push([`templates/${template.path}`, template.content.endsWith("\n") ? template.content : `${template.content}\n`]);
+  }
+
+  for (const prompt of preparedPrompts) {
+    files.push([`prompts/${prompt.id}.yaml`, YAML.stringify(prompt)]);
   }
 
   return files;
@@ -118,7 +123,18 @@ function renderManifest(draft: AgentKitDraft, skills: AgentKitDraft["skills"]): 
       path: `skills/${skill.id}/SKILL.md`,
       description: skill.description,
       triggers: skill.triggers
-    }))
+    })),
+    ...(draft.preparedPrompts.length > 0
+      ? {
+          prompts: [...draft.preparedPrompts]
+            .sort((left, right) => left.id.localeCompare(right.id))
+            .map((prompt) => ({
+              id: prompt.id,
+              path: `prompts/${prompt.id}.yaml`,
+              description: prompt.description
+            }))
+        }
+      : {})
   });
 }
 

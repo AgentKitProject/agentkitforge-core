@@ -6,6 +6,7 @@ export { exportAgentKitToCodex } from "./adapters/codex.js";
 export { buildAgentKitContext } from "./context/builder.js";
 export { agentKitDraftSchema, exampleDraftSchema, policyDraftSchema, skillDraftSchema, templateDraftSchema } from "./draft/schema.js";
 export { AgentKitDraftValidationError, renderAgentKitDraft } from "./draft/render.js";
+export { findMatchingDomains, getKnownDomains, knownDomains } from "./domains/catalog.js";
 export { exportOneFile } from "./export/onefile.js";
 export { createAgentKit } from "./init/create.js";
 export { packageAgentKit } from "./package/packager.js";
@@ -21,6 +22,21 @@ export {
   providerSupportsStructuredJson,
   structuredOutputGuidance
 } from "./providers/catalog.js";
+export {
+  extractPromptVariables,
+  getDefaultArtifactNames,
+  getDefaultArtifactNamesForManifest,
+  listPreparedPrompts,
+  loadPreparedPrompt,
+  renderPreparedPrompt,
+  validatePreparedPromptInputs
+} from "./prompts/prompts.js";
+export {
+  preparedPromptInputSchema,
+  preparedPromptInputTypeSchema,
+  preparedPromptOutputModeSchema,
+  preparedPromptSchema
+} from "./prompts/schema.js";
 export { readAgentKit, readYamlFile } from "./package/reader.js";
 export { validateAgentKit } from "./validation/validator.js";
 export { parseSkillMarkdown, validateSkillFile } from "./validation/skill.js";
@@ -53,6 +69,14 @@ export type {
   ModelRecommendationTag,
   ProviderCapabilities
 } from "./providers/types.js";
+export type { KnownDomain } from "./domains/catalog.js";
+export type {
+  PreparedPrompt,
+  PreparedPromptInput,
+  PreparedPromptInputType,
+  PreparedPromptOutputMode
+} from "./prompts/schema.js";
+export type { PreparedPromptInputValidationReport, PreparedPromptInputValues } from "./prompts/prompts.js";
 export type {
   AgentKitManifest,
   AgentKitSkillManifest,

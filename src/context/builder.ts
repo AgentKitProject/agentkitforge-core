@@ -18,13 +18,15 @@ const OPTIONAL_DIRECTORIES: Array<{
   key: keyof Pick<
     AgentKitContextRequest,
     "includePolicies" | "includeTemplates" | "includeWorkflows" | "includeReferences"
+    | "includePrompts"
   >;
   directory: string;
 }> = [
   { key: "includePolicies", directory: "policies" },
   { key: "includeTemplates", directory: "templates" },
   { key: "includeWorkflows", directory: "workflows" },
-  { key: "includeReferences", directory: "references" }
+  { key: "includeReferences", directory: "references" },
+  { key: "includePrompts", directory: "prompts" }
 ];
 
 export async function buildAgentKitContext(

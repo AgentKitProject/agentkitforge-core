@@ -11,6 +11,11 @@ import { exportOneFile } from "../export/onefile.js";
 import { createAgentKit } from "../init/create.js";
 import type { AgentKitTemplateName } from "../init/templates.js";
 import { packageAgentKit } from "../package/packager.js";
+import {
+  listPreparedPrompts,
+  renderPreparedPrompt,
+  validatePreparedPromptInputs
+} from "../prompts/prompts.js";
 import type { AgentKitValidationProfile } from "../types.js";
 import { validateAgentKit } from "../validation/validator.js";
 
@@ -162,6 +167,7 @@ export function createCliProgram(): Command {
     .option("--no-templates", "Exclude templates")
     .option("--no-workflows", "Exclude workflows")
     .option("--include-references", "Include references")
+    .option("--no-prompts", "Exclude prepared prompts")
     .option("--max-skills <count>", "Maximum skills for triggered mode", parseInteger)
     .action(
       async (
@@ -175,6 +181,7 @@ export function createCliProgram(): Command {
           templates: boolean;
           workflows: boolean;
           includeReferences?: boolean;
+          prompts: boolean;
           maxSkills?: number;
         }
       ) => {
@@ -195,6 +202,7 @@ export function createCliProgram(): Command {
           includeTemplates: options.templates,
           includeWorkflows: options.workflows,
           includeReferences: options.includeReferences === true,
+          includePrompts: options.prompts,
           maxSkills: options.maxSkills
         });
         const outPath = path.resolve(options.out);
@@ -203,6 +211,52 @@ export function createCliProgram(): Command {
         console.log(outPath);
       }
     );
+
+  program
+    .command("list-prompts")
+    .argument("<kit-path>", "Agent Kit folder")
+    .action(async (kitPath: string) => {
+      console.log(JSON.stringify(await listPreparedPrompts(kitPath), null, 2));
+    });
+
+  program
+    .command("render-prompt")
+    .argument("<kit-path>", "Agent Kit folder")
+    .argument("<prompt-id>", "Prepared prompt id")
+    .requiredOption("--inputs <json-file>", "Input values JSON file")
+    .option("--out <file>", "Output rendered prompt file")
+    .action(
+      async (
+        kitPath: string,
+        promptId: string,
+        options: {
+          inputs: string;
+          out?: string;
+        }
+      ) => {
+        const prompt = await findPreparedPrompt(kitPath, promptId);
+        const inputValues = JSON.parse(await readFile(options.inputs, "utf8")) as Record<string, unknown>;
+        const rendered = renderPreparedPrompt(prompt, inputValues);
+        if (options.out) {
+          const outPath = path.resolve(options.out);
+          await mkdir(path.dirname(outPath), { recursive: true });
+          await writeFile(outPath, rendered, "utf8");
+        } else {
+          console.log(rendered);
+        }
+      }
+    );
+
+  program
+    .command("validate-prompt-inputs")
+    .argument("<kit-path>", "Agent Kit folder")
+    .argument("<prompt-id>", "Prepared prompt id")
+    .requiredOption("--inputs <json-file>", "Input values JSON file")
+    .action(async (kitPath: string, promptId: string, options: { inputs: string }) => {
+      const prompt = await findPreparedPrompt(kitPath, promptId);
+      const inputValues = JSON.parse(await readFile(options.inputs, "utf8")) as Record<string, unknown>;
+      console.log(JSON.stringify(validatePreparedPromptInputs(prompt, inputValues), null, 2));
+    });
 
   program
     .command("export-codex")
@@ -258,4 +312,14 @@ function parseInteger(value: string): number {
   }
 
   return parsed;
+}
+
+async function findPreparedPrompt(kitPath: string, promptId: string) {
+  const prompts = await listPreparedPrompts(kitPath);
+  const prompt = prompts.find((entry) => entry.id === promptId);
+  if (!prompt) {
+    throw new Error(`Prepared prompt not found: ${promptId}`);
+  }
+
+  return prompt;
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import { ZodError } from "zod";
 import { agentKitManifestSchema } from "../schema/agentkit.js";
 import { readYamlFile } from "../package/reader.js";
+import { loadPreparedPrompt } from "../prompts/prompts.js";
 import type {
   AgentKitManifest,
   AgentKitValidationProfile,
@@ -116,6 +117,7 @@ export async function validateAgentKit(
     }
 
     issues.push(...(await validateDeclaredScripts(resolvedRoot, manifest)));
+    issues.push(...(await validatePreparedPromptFiles(resolvedRoot, manifest)));
   }
 
   return {
@@ -124,6 +126,47 @@ export async function validateAgentKit(
     rootPath: resolvedRoot,
     issues
   };
+}
+
+async function validatePreparedPromptFiles(
+  rootPath: string,
+  manifest: AgentKitManifest
+): Promise<ValidationIssue[]> {
+  const issues: ValidationIssue[] = [];
+
+  for (const prompt of manifest.prompts ?? []) {
+    const promptPath = path.join(rootPath, prompt.path);
+    if (!(await exists(promptPath))) {
+      issues.push({
+        severity: "error",
+        code: "manifest.prompt_path.missing",
+        message: `Manifest prepared prompt path does not exist: ${prompt.path}`,
+        path: prompt.path
+      });
+      continue;
+    }
+
+    try {
+      const loadedPrompt = await loadPreparedPrompt(promptPath);
+      if (loadedPrompt.id !== prompt.id) {
+        issues.push({
+          severity: "error",
+          code: "prompt.id.mismatch",
+          message: `Prepared prompt id mismatch: manifest has ${prompt.id}, file has ${loadedPrompt.id}`,
+          path: prompt.path
+        });
+      }
+    } catch (error) {
+      issues.push({
+        severity: "error",
+        code: "prompt.invalid",
+        message: error instanceof Error ? error.message : "Invalid prepared prompt",
+        path: prompt.path
+      });
+    }
+  }
+
+  return issues;
 }
 
 function zodIssuesToValidationIssues(error: ZodError, filePath: string): ValidationIssue[] {

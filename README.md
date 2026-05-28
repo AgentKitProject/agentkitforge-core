@@ -53,6 +53,24 @@ node dist/cli/index.js render-draft ./draft.json ./rendered-agentkit --force
 
 Draft rendering validates the JSON structure before writing files. Rendered kits include the standard manifest, entrypoint Markdown files, README, LICENSE, CHANGELOG, skills, and any draft policies, examples, or templates.
 
+List prepared prompts in a kit:
+
+```bash
+node dist/cli/index.js list-prompts ./path/to/agentkit
+```
+
+Render a prepared prompt with input values:
+
+```bash
+node dist/cli/index.js render-prompt ./path/to/agentkit financial-review --inputs inputs.json --out rendered-prompt.md
+```
+
+Validate prepared prompt inputs:
+
+```bash
+node dist/cli/index.js validate-prompt-inputs ./path/to/agentkit financial-review --inputs inputs.json
+```
+
 Prepare a provider-neutral AI draft request:
 
 ```bash
@@ -149,6 +167,41 @@ The exported provider helpers cover:
 
 Known models are suggestions, not constraints. Apps and CLIs that consume this package must always allow custom model IDs, especially for Ollama and OpenAI-compatible providers.
 
+## Prepared Prompts
+
+Prepared Prompts are reusable prompt templates stored under `prompts/<prompt-id>.yaml`. They let a kit define exact prompts that can be rendered later in Use mode after an app collects required inputs.
+
+Prompt input types:
+
+- `short-text`
+- `long-text`
+- `choice`
+- `multi-choice`
+- `date`
+- `number`
+- `boolean`
+
+Prepared prompt paths can be referenced from `agentkit.yaml`:
+
+```yaml
+prompts:
+  - id: financial-review
+    path: prompts/financial-review.yaml
+    description: Review a financial workbook and produce a summary.
+```
+
+One-file export renders prepared prompts in a readable Markdown section instead of dumping raw YAML.
+
+Default artifact naming helpers return predictable names such as:
+
+- `<kit-id>-<version>.onefile.md`
+- `<kit-id>-<version>.agentkit.zip`
+- `<kit-id>-output-<timestamp>.md`
+
+## Domains
+
+Core includes a known domain catalog for guided builders and filtering. Domains are suggestions, not constraints. Consumers should always allow custom domains.
+
 ## Agent Kit Structure
 
 ```text
@@ -159,6 +212,7 @@ README.md
 LICENSE
 CHANGELOG.md
 skills/<skill-id>/SKILL.md
+prompts/<prompt-id>.yaml
 workflows/
 policies/
 references/

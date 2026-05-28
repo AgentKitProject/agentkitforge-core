@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { preparedPromptSchema } from "../prompts/schema.js";
 
 const idSchema = z
   .string()
@@ -66,7 +67,8 @@ export const agentKitDraftSchema = z
     skills: z.array(skillDraftSchema).min(1),
     policies: z.array(policyDraftSchema).default([]),
     examples: z.array(exampleDraftSchema).default([]),
-    templates: z.array(templateDraftSchema).default([])
+    templates: z.array(templateDraftSchema).default([]),
+    preparedPrompts: z.array(preparedPromptSchema).default([])
   })
   .strict();
 

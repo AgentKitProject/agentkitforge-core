@@ -11,6 +11,7 @@ export interface AgentKitContextRequest {
   includeTemplates?: boolean;
   includeWorkflows?: boolean;
   includeReferences?: boolean;
+  includePrompts?: boolean;
   maxSkills?: number;
 }
 

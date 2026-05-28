@@ -27,6 +27,12 @@ export interface AgentKitSkillManifest {
   triggers: string[];
 }
 
+export interface AgentKitPromptManifest {
+  id: string;
+  path: string;
+  description: string;
+}
+
 export interface AgentKitManifest {
   schemaVersion: string;
   kind: string;
@@ -52,6 +58,7 @@ export interface AgentKitManifest {
     level: string;
   };
   skills: AgentKitSkillManifest[];
+  prompts?: AgentKitPromptManifest[];
   scripts?: Array<string | { id?: string; path: string; description?: string }>;
   [key: string]: unknown;
 }

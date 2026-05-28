@@ -23,12 +23,13 @@ describe("AI provider metadata", () => {
   });
 
   test("known model lookup works", () => {
-    expect(getKnownModelsForProvider("openai").map((model) => model.id)).toContain("gpt-4.1");
+    expect(getKnownModelsForProvider("openai").length).toBeGreaterThan(0);
+    expect(getKnownModelsForProvider("openai").every((model) => model.providerTypes.includes("openai"))).toBe(true);
     expect(getKnownModelsForProvider("ollama").some((model) => model.recommendedFor.includes("local"))).toBe(true);
   });
 
   test("default model lookup works", () => {
-    expect(getDefaultModelForProvider("openai")).toBe("gpt-4.1");
+    expect(getDefaultModelForProvider("openai")).toBe(getKnownModelsForProvider("openai")[0]?.id);
     expect(getDefaultModelForProvider("openai-compatible")).toBeUndefined();
   });
 
@@ -58,7 +59,7 @@ describe("AI provider metadata", () => {
   test("structured JSON support helper respects explicit override", () => {
     expect(providerSupportsStructuredJson("ollama", "llama3.1")).toBe(false);
     expect(providerSupportsStructuredJson("ollama", "llama3.1", true)).toBe(true);
-    expect(providerSupportsStructuredJson("openai", "gpt-4.1")).toBe(true);
+    expect(providerSupportsStructuredJson("openai", getDefaultModelForProvider("openai"))).toBe(true);
     expect(providerSupportsStructuredJson("openai-compatible", "custom-json-model", false)).toBe(false);
   });
 

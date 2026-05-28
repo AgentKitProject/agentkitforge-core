@@ -1,5 +1,7 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { listPreparedPrompts } from "../prompts/prompts.js";
+import type { PreparedPrompt } from "../prompts/schema.js";
 
 const TOP_LEVEL_FILES = ["START_HERE.md", "AGENTKIT.md"] as const;
 const OPTIONAL_DIRECTORIES = ["workflows", "policies", "templates"] as const;
@@ -20,9 +22,43 @@ export async function exportOneFile(rootPath: string, outFile: string): Promise<
     await appendDirectorySections(sections, resolvedRoot, directory);
   }
 
+  await appendPreparedPromptSections(sections, resolvedRoot);
+
   const resolvedOut = path.resolve(outFile);
   await writeFile(resolvedOut, sections.join("\n\n"), "utf8");
   return resolvedOut;
+}
+
+async function appendPreparedPromptSections(sections: string[], rootPath: string): Promise<void> {
+  const prompts = await listPreparedPrompts(rootPath);
+  if (prompts.length === 0) {
+    return;
+  }
+
+  sections.push(`## Prepared Prompts\n\n${prompts.map(renderPromptSection).join("\n\n")}`);
+}
+
+function renderPromptSection(prompt: PreparedPrompt): string {
+  const inputs =
+    prompt.inputs.length === 0
+      ? "None"
+      : prompt.inputs
+          .map((input) => `- ${input.id} (${input.type}${input.required ? ", required" : ", optional"}): ${input.label}`)
+          .join("\n");
+
+  return `### ${prompt.name}
+
+${prompt.description}
+
+**Template**
+
+\`\`\`text
+${prompt.template}
+\`\`\`
+
+**Inputs**
+
+${inputs}`;
 }
 
 async function appendDirectorySections(
