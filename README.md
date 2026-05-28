@@ -200,6 +200,8 @@ Known models are suggestions, not constraints. Apps and CLIs that consume this p
 
 Prepared Prompts are reusable prompt templates stored under `prompts/<prompt-id>.yaml`. They let a kit define exact prompts that can be rendered later in Use mode after an app collects required inputs.
 
+Canonical variable syntax is `{{variable_name}}`. A simpler `{variable_name}` form is tolerated for compatibility. Whitespace is allowed inside braces, such as `{{ company_name }}`. Inputs are defined by the prepared prompt, and AgentKitForge validates/rendered prompts so unresolved variables are blocked before an app sends the prompt to an AI provider.
+
 Prompt input types:
 
 - `short-text`

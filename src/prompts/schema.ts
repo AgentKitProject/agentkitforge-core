@@ -8,7 +8,7 @@ const kebabIdSchema = z
 const inputIdSchema = z
   .string()
   .min(1)
-  .regex(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, underscores, and hyphens");
+  .regex(/^[a-zA-Z0-9_.-]+$/, "Use letters, numbers, dots, underscores, and hyphens");
 
 export const preparedPromptInputTypeSchema = z.enum([
   "short-text",

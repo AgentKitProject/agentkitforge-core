@@ -48,11 +48,13 @@ export {
 } from "./providers/catalog.js";
 export {
   extractPromptVariables,
+  findUnresolvedPromptVariables,
   getDefaultArtifactNames,
   getDefaultArtifactNamesForManifest,
   listPreparedPrompts,
   loadPreparedPrompt,
   renderPreparedPrompt,
+  renderPreparedPromptWithValidation,
   validatePreparedPromptInputs
 } from "./prompts/prompts.js";
 export {
@@ -120,7 +122,11 @@ export type {
   PreparedPromptInputType,
   PreparedPromptOutputMode
 } from "./prompts/schema.js";
-export type { PreparedPromptInputValidationReport, PreparedPromptInputValues } from "./prompts/prompts.js";
+export type {
+  PreparedPromptInputValidationReport,
+  PreparedPromptInputValues,
+  PreparedPromptRenderResult
+} from "./prompts/prompts.js";
 export type {
   AgentKitManifest,
   AgentKitSkillManifest,

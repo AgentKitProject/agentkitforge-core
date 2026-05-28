@@ -12,8 +12,20 @@ export interface PreparedPromptInputValidationReport {
 
 export type PreparedPromptInputValues = Record<string, unknown>;
 
+export interface PreparedPromptRenderResult {
+  renderedPrompt: string;
+  missingInputs: string[];
+  unresolvedVariables: string[];
+  warnings: string[];
+  valid: boolean;
+}
+
 export function extractPromptVariables(template: string): string[] {
-  return [...new Set([...template.matchAll(/\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g)].map((match) => match[1]))].sort();
+  return [...new Set([...matchPromptVariables(template)].map((match) => match.name))].sort();
+}
+
+export function findUnresolvedPromptVariables(renderedPrompt: string): string[] {
+  return extractPromptVariables(renderedPrompt);
 }
 
 export async function listPreparedPrompts(kitPath: string): Promise<PreparedPrompt[]> {
@@ -58,6 +70,19 @@ export function validatePreparedPromptInputs(
   inputValues: PreparedPromptInputValues
 ): PreparedPromptInputValidationReport {
   const issues: ValidationIssue[] = [];
+  const templateVariables = extractPromptVariables(prompt.template);
+  const inputIds = new Set(prompt.inputs.map((input) => input.id));
+
+  for (const variable of templateVariables) {
+    if (!inputIds.has(variable)) {
+      issues.push({
+        severity: "error",
+        code: "prompt.placeholder.undefined",
+        message: `Prepared prompt template references undefined input: ${variable}`,
+        path: variable
+      });
+    }
+  }
 
   for (const input of prompt.inputs) {
     const value = inputValues[input.id] ?? input.defaultValue;
@@ -86,16 +111,48 @@ export function renderPreparedPrompt(
   prompt: PreparedPrompt,
   inputValues: PreparedPromptInputValues
 ): string {
-  const report = validatePreparedPromptInputs(prompt, inputValues);
-  if (!report.valid) {
-    throw new Error(report.issues.map((issue) => issue.message).join("; "));
+  const result = renderPreparedPromptWithValidation(prompt, inputValues);
+  if (!result.valid) {
+    const messages = [
+      ...result.missingInputs.map((input) => `Missing required prompt input: ${input}`),
+      ...(result.unresolvedVariables.length > 0
+        ? [`Unresolved prompt variables: ${result.unresolvedVariables.join(", ")}`]
+        : [])
+    ];
+    throw new Error(messages.join("; "));
   }
 
-  return prompt.template.replace(/\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g, (_match, inputId: string) => {
+  return result.renderedPrompt;
+}
+
+export function renderPreparedPromptWithValidation(
+  prompt: PreparedPrompt,
+  inputValues: PreparedPromptInputValues
+): PreparedPromptRenderResult {
+  const report = validatePreparedPromptInputs(prompt, inputValues);
+  const missingInputs = report.issues
+    .filter((issue) => issue.code === "prompt.input.required")
+    .map((issue) => issue.path ?? "");
+  const renderedPrompt = replacePromptVariables(prompt.template, (inputId, original) => {
     const input = prompt.inputs.find((entry) => entry.id === inputId);
+    if (!input) {
+      return original;
+    }
     const value = inputValues[inputId] ?? input?.defaultValue;
+    if (isMissing(value) && input.required) {
+      return original;
+    }
     return isMissing(value) ? "" : stringifyPromptValue(value);
   });
+  const unresolvedVariables = findUnresolvedPromptVariables(renderedPrompt);
+
+  return {
+    renderedPrompt,
+    missingInputs,
+    unresolvedVariables,
+    warnings: [],
+    valid: report.valid && unresolvedVariables.length === 0
+  };
 }
 
 export function getDefaultArtifactNames(input: {
@@ -177,6 +234,30 @@ function stringifyPromptValue(value: unknown): string {
   }
 
   return String(value);
+}
+
+function replacePromptVariables(
+  template: string,
+  getValue: (inputId: string, original: string) => string
+): string {
+  return template
+    .replace(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g, (match: string, inputId: string) =>
+      getValue(inputId, match)
+    )
+    .replace(/\{(?!\{)\s*([a-zA-Z0-9_.-]+)\s*\}(?!\})/g, (match: string, inputId: string) =>
+      getValue(inputId, match)
+    );
+}
+
+function matchPromptVariables(template: string): Array<{ name: string }> {
+  const matches: Array<{ name: string }> = [];
+  for (const match of template.matchAll(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g)) {
+    matches.push({ name: match[1] });
+  }
+  for (const match of template.matchAll(/\{(?!\{)\s*([a-zA-Z0-9_.-]+)\s*\}(?!\})/g)) {
+    matches.push({ name: match[1] });
+  }
+  return matches;
 }
 
 function isMissing(value: unknown): boolean {

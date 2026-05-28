@@ -9,9 +9,11 @@ import { exportOneFile } from "../src/export/onefile.js";
 import { createAgentKit } from "../src/init/create.js";
 import {
   extractPromptVariables,
+  findUnresolvedPromptVariables,
   getDefaultArtifactNames,
   listPreparedPrompts,
   renderPreparedPrompt,
+  renderPreparedPromptWithValidation,
   validatePreparedPromptInputs
 } from "../src/prompts/prompts.js";
 import { preparedPromptSchema } from "../src/prompts/schema.js";
@@ -220,6 +222,105 @@ describe("Prepared Prompts", () => {
 
     expect(validatePreparedPromptInputs(prompt, {}).valid).toBe(false);
   });
+
+  test("double-brace replacement", () => {
+    expect(
+      renderPreparedPrompt(simplePrompt("Review {{company_name}} for {{reporting_period}}."), {
+        company_name: "Amazon",
+        reporting_period: "Q1 2024"
+      })
+    ).toBe("Review Amazon for Q1 2024.");
+  });
+
+  test("single-brace replacement", () => {
+    expect(
+      renderPreparedPrompt(simplePrompt("Review {company_name} for {reporting_period}."), {
+        company_name: "Amazon",
+        reporting_period: "Q1 2024"
+      })
+    ).toBe("Review Amazon for Q1 2024.");
+  });
+
+  test("whitespace replacement", () => {
+    expect(
+      renderPreparedPrompt(simplePrompt("Review {{ company_name }} for { reporting_period }."), {
+        company_name: "Amazon",
+        reporting_period: "Q1 2024"
+      })
+    ).toBe("Review Amazon for Q1 2024.");
+  });
+
+  test("mixed syntax replacement", () => {
+    expect(
+      renderPreparedPrompt(simplePrompt("{company_name} summary for {{reporting_period}}"), {
+        company_name: "Amazon",
+        reporting_period: "Q1 2024"
+      })
+    ).toBe("Amazon summary for Q1 2024");
+  });
+
+  test("missing required input lists missing variable", () => {
+    const result = renderPreparedPromptWithValidation(
+      simplePrompt("Review {{company_name}} for {{reporting_period}}."),
+      { company_name: "Amazon" }
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.missingInputs).toContain("reporting_period");
+    expect(result.unresolvedVariables).toContain("reporting_period");
+    expect(() =>
+      renderPreparedPrompt(simplePrompt("Review {{company_name}} for {{reporting_period}}."), {
+        company_name: "Amazon"
+      })
+    ).toThrow("reporting_period");
+  });
+
+  test("undefined placeholder is reported", () => {
+    const prompt = {
+      ...simplePrompt("Review {{company_name}} for {{unknown_field}}."),
+      inputs: [
+        {
+          id: "company_name",
+          label: "Company name",
+          type: "short-text" as const,
+          required: true
+        }
+      ]
+    };
+    const report = validatePreparedPromptInputs(prompt, { company_name: "Amazon" });
+    const result = renderPreparedPromptWithValidation(prompt, { company_name: "Amazon" });
+
+    expect(report.valid).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: "prompt.placeholder.undefined",
+        path: "unknown_field"
+      })
+    );
+    expect(result.unresolvedVariables).toContain("unknown_field");
+  });
+
+  test("no unresolved placeholders after successful render", () => {
+    const rendered = renderPreparedPrompt(simplePrompt("Review {{company_name}} for {{reporting_period}}."), {
+      company_name: "Amazon",
+      reporting_period: "Q1 2024"
+    });
+
+    expect(findUnresolvedPromptVariables(rendered)).toEqual([]);
+  });
+
+  test("regression: Amazon Q1 inputs do not leave placeholders", () => {
+    const rendered = renderPreparedPrompt(simplePrompt("Review {company_name} for {{reporting_period}}."), {
+      company_name: "Amazon",
+      reporting_period: "Q1 2024"
+    });
+
+    expect(rendered).toBe("Review Amazon for Q1 2024.");
+    expect(rendered).not.toContain("{company_name}");
+    expect(rendered).not.toContain("{reporting_period}");
+    expect(rendered).not.toContain("{{company_name}}");
+    expect(rendered).not.toContain("{{reporting_period}}");
+  });
 });
 
 function preparedPromptFixture() {
@@ -261,6 +362,29 @@ function preparedPromptFixture() {
     documentLikeOutput: true,
     suggestedFileName: "{{company_name}}-financial-review",
     tags: ["finance"]
+  };
+}
+
+function simplePrompt(template: string) {
+  return {
+    id: "simple",
+    name: "Simple",
+    description: "Simple prompt.",
+    template,
+    inputs: [
+      {
+        id: "company_name",
+        label: "Company name",
+        type: "short-text" as const,
+        required: true
+      },
+      {
+        id: "reporting_period",
+        label: "Reporting period",
+        type: "short-text" as const,
+        required: true
+      }
+    ]
   };
 }
 
