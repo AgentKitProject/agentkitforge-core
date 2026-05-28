@@ -1,6 +1,14 @@
 export { agentKitManifestSchema, agentKitSkillSchema } from "./schema/agentkit.js";
 export { createAgentKitDraftRequest } from "./builder/draftRequest.js";
 export { createAgentKitDraftRevisionRequest } from "./builder/revisionRequest.js";
+export {
+  inferExampleInputDocumentKind,
+  isSupportedExampleInputDocument,
+  summarizeExampleInputDocument
+} from "./app/exampleInputDocuments.js";
+export { inspectAgentKitCandidate } from "./app/inspect.js";
+export { getAgentKitSummary } from "./app/summary.js";
+export { loadAgentKitAsDraft } from "./app/loadAsDraft.js";
 export { createAgentKitBuilderInstructions } from "./builder/instructions.js";
 export { exportAgentKitToClaudeCode } from "./adapters/claudeCode.js";
 export { exportAgentKitToCodex } from "./adapters/codex.js";
@@ -17,6 +25,12 @@ export {
   validateDraftSession
 } from "./draft/session.js";
 export { findMatchingDomains, getKnownDomains, knownDomains } from "./domains/catalog.js";
+export {
+  getDefaultOneFileName,
+  getDefaultOutputName,
+  getDefaultPackageName,
+  sanitizeArtifactName
+} from "./artifacts/naming.js";
 export { exportOneFile } from "./export/onefile.js";
 export { createAgentKit } from "./init/create.js";
 export { packageAgentKit } from "./package/packager.js";
@@ -63,6 +77,15 @@ export type {
   AgentKitDraftRequest,
   CreateAgentKitDraftRequestInput
 } from "./builder/draftRequest.js";
+export type {
+  ExampleInputDocument,
+  ExampleInputDocumentKind,
+  ExampleInputDocumentSummary
+} from "./app/exampleInputDocuments.js";
+export type { AgentKitCandidateInspection } from "./app/inspect.js";
+export type { AgentKitSummary } from "./app/summary.js";
+export type { LoadAgentKitAsDraftResult } from "./app/loadAsDraft.js";
+export type { ArtifactNameMetadata } from "./artifacts/naming.js";
 export type {
   AgentKitDraftRevisionRequest,
   CreateAgentKitDraftRevisionRequestInput

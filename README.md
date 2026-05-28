@@ -71,6 +71,14 @@ Validate prepared prompt inputs:
 node dist/cli/index.js validate-prompt-inputs ./path/to/agentkit financial-review --inputs inputs.json
 ```
 
+Inspect, summarize, or load an existing kit as a draft:
+
+```bash
+node dist/cli/index.js inspect ./path/to/repo-or-kit
+node dist/cli/index.js summarize ./path/to/agentkit
+node dist/cli/index.js load-as-draft ./path/to/agentkit --out draft.json
+```
+
 Prepare a provider-neutral AI draft request:
 
 ```bash
@@ -222,6 +230,19 @@ Default artifact naming helpers return predictable names such as:
 ## Domains
 
 Core includes a known domain catalog for guided builders and filtering. Domains are suggestions, not constraints. Consumers should always allow custom domains.
+
+## App-Support Helpers
+
+Core includes reusable helpers for app workflows:
+
+- `inspectAgentKitCandidate(path)` for import-friendly diagnostics.
+- `getAgentKitSummary(path)` for details, export, and install target screens.
+- `loadAgentKitAsDraft(path)` for Edit with AI and guided editing.
+- `requestedSections` and `excludedSections` on draft request builders for AI section control.
+- Example input document metadata helpers for `.txt`, `.md`, `.csv`, `.xlsx`, and `.xls`.
+- Artifact naming helpers for one-file exports, packages, and generated outputs.
+
+Example input documents are app-provided metadata. Core does not upload files, call AI providers, or perform heavy spreadsheet parsing. Apps can use them to help AI infer formatting, terminology, expected outputs, required inputs, skill procedures, and prepared prompt variables.
 
 ## Agent Kit Structure
 

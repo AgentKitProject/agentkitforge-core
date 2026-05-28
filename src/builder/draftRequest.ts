@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { ExampleInputDocument } from "../app/exampleInputDocuments.js";
+import { summarizeExampleInputDocument } from "../app/exampleInputDocuments.js";
 import { agentKitDraftSchema } from "../draft/schema.js";
 import type { AgentKitValidationProfile } from "../types.js";
 import { createAgentKitBuilderInstructions } from "./instructions.js";
@@ -11,6 +13,9 @@ export interface CreateAgentKitDraftRequestInput {
   constraints?: string[];
   sourceNotes?: string[];
   existingKitSummary?: string;
+  requestedSections?: string[];
+  excludedSections?: string[];
+  exampleInputDocuments?: ExampleInputDocument[];
 }
 
 export interface AgentKitDraftRequest {
@@ -68,6 +73,29 @@ function buildUserPrompt(input: CreateAgentKitDraftRequestInput): string {
   appendList(lines, "Target users", input.targetUsers);
   appendList(lines, "Constraints", input.constraints);
   appendList(lines, "Source notes", input.sourceNotes);
+  appendList(lines, "Requested sections", input.requestedSections);
+  appendList(lines, "Excluded sections", input.excludedSections);
+
+  if (!input.requestedSections?.includes("scripts")) {
+    lines.push("", "Do not generate scripts unless scripts are explicitly requested.");
+  }
+
+  lines.push(
+    "Generate requested sections. Do not generate excluded sections unless required for validity.",
+    "Prefer simple useful kits over overly complex kits.",
+    "Prepared prompts should include inputs and variables when repeatable workflows need them."
+  );
+
+  if (input.exampleInputDocuments && input.exampleInputDocuments.length > 0) {
+    lines.push("", "Example input document summaries:");
+    for (const document of input.exampleInputDocuments.map(summarizeExampleInputDocument)) {
+      lines.push(`- ${document.name} (${document.filename}, ${document.kind})${document.notes ? `: ${document.notes}` : ""}`);
+    }
+    lines.push(
+      "Use example input documents to infer formatting, terminology, output style, required inputs, skill procedures, templates, and prepared prompt variables.",
+      "Do not quote excessive source text. Summarize patterns into skills, templates, and prepared prompts."
+    );
+  }
 
   if (input.existingKitSummary) {
     lines.push("", "Existing kit summary for revision:", input.existingKitSummary);

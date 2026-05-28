@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { ExampleInputDocument } from "../app/exampleInputDocuments.js";
+import { summarizeExampleInputDocument } from "../app/exampleInputDocuments.js";
 import { agentKitDraftSchema, type AgentKitDraft } from "../draft/schema.js";
 import type { AgentKitValidationProfile } from "../types.js";
 import { createAgentKitBuilderInstructions } from "./instructions.js";
@@ -10,6 +12,9 @@ export interface CreateAgentKitDraftRevisionRequestInput {
   desiredValidationLevel?: AgentKitValidationProfile;
   constraints?: string[];
   sourceNotes?: string[];
+  requestedSections?: string[];
+  excludedSections?: string[];
+  exampleInputDocuments?: ExampleInputDocument[];
 }
 
 export interface AgentKitDraftRevisionRequest {
@@ -72,6 +77,9 @@ function buildRevisionPrompt(input: CreateAgentKitDraftRevisionRequestInput): st
     "Keep IDs stable unless the requested change requires changing them.",
     "Preserve prepared prompts unless asked to remove or change them.",
     "Add prepared prompts and input variables when the user asks for reusable prompts or required inputs.",
+    "Generate requested sections. Do not generate excluded sections unless required for validity.",
+    "Prefer simple useful kits over overly complex kits.",
+    "Do not generate scripts unless scripts are explicitly requested.",
     "Keep output valid against the AgentKitDraft schema.",
     "",
     `Requested change: ${input.changeRequest}`,
@@ -84,6 +92,19 @@ function buildRevisionPrompt(input: CreateAgentKitDraftRevisionRequestInput): st
 
   appendList(lines, "Constraints", input.constraints);
   appendList(lines, "Source notes", input.sourceNotes);
+  appendList(lines, "Requested sections", input.requestedSections);
+  appendList(lines, "Excluded sections", input.excludedSections);
+
+  if (input.exampleInputDocuments && input.exampleInputDocuments.length > 0) {
+    lines.push("", "Example input document summaries:");
+    for (const document of input.exampleInputDocuments.map(summarizeExampleInputDocument)) {
+      lines.push(`- ${document.name} (${document.filename}, ${document.kind})${document.notes ? `: ${document.notes}` : ""}`);
+    }
+    lines.push(
+      "Use example input documents to infer formatting and expected outputs.",
+      "Do not quote excessive source text. Summarize patterns into skills, templates, and prepared prompts."
+    );
+  }
 
   lines.push("", "Current AgentKitDraft JSON:", JSON.stringify(input.currentDraft, null, 2));
 

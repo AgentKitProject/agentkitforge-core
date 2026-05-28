@@ -3,6 +3,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { exportAgentKitToClaudeCode } from "../adapters/claudeCode.js";
 import { exportAgentKitToCodex } from "../adapters/codex.js";
+import { inspectAgentKitCandidate } from "../app/inspect.js";
+import { getAgentKitSummary } from "../app/summary.js";
+import { loadAgentKitAsDraft } from "../app/loadAsDraft.js";
 import { createAgentKitDraftRequest } from "../builder/draftRequest.js";
 import { createAgentKitDraftRevisionRequest } from "../builder/revisionRequest.js";
 import { buildAgentKitContext } from "../context/builder.js";
@@ -48,6 +51,32 @@ export function createCliProgram(): Command {
 
       console.log(JSON.stringify(report, null, 2));
       process.exitCode = report.valid ? 0 : 1;
+    });
+
+  program
+    .command("inspect")
+    .argument("<path>", "Folder to inspect")
+    .action(async (inputPath: string) => {
+      console.log(JSON.stringify(await inspectAgentKitCandidate(inputPath), null, 2));
+    });
+
+  program
+    .command("summarize")
+    .argument("<path>", "Agent Kit folder")
+    .action(async (kitPath: string) => {
+      console.log(JSON.stringify(await getAgentKitSummary(kitPath), null, 2));
+    });
+
+  program
+    .command("load-as-draft")
+    .argument("<path>", "Agent Kit folder")
+    .requiredOption("--out <file>", "Output draft JSON file")
+    .action(async (kitPath: string, options: { out: string }) => {
+      const result = await loadAgentKitAsDraft(kitPath);
+      const outPath = path.resolve(options.out);
+      await mkdir(path.dirname(outPath), { recursive: true });
+      await writeFile(outPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
+      console.log(outPath);
     });
 
   program
