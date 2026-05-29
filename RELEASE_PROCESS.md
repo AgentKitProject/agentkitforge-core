@@ -52,12 +52,12 @@ The publish workflow:
 2. Runs `npm ci`.
 3. Runs `npm run build`.
 4. Runs `npm test`.
-5. Runs `npm run smoke`.
-6. Runs `npm pack`.
+5. Runs `npm run smoke --if-present`.
+6. Runs `npm pack --dry-run`.
 7. Verifies the tarball includes `dist/`, `README.md`, `LICENSE`, `CLI.md`, and `SPEC.md`.
 8. Runs `npm publish --access public`.
 
-The workflow uses npm Trusted Publishing through GitHub Actions OIDC and does not use `NPM_TOKEN`. Configure npm Trusted Publishing for package `@agentkitforge/core` in npm settings before relying on this workflow. The trusted publisher configuration must match:
+The workflow uses npm Trusted Publishing through GitHub Actions OIDC and does not use `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or checked-in `.npmrc` token auth. Configure npm Trusted Publishing for package `@agentkitforge/core` in npm settings before relying on this workflow. The trusted publisher configuration must match:
 
 - Repository: `AgentKitProject/agentkitforge-core`
 - Workflow file: `.github/workflows/publish-npm.yml`

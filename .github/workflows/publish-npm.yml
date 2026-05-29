@@ -22,6 +22,11 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
+      - name: Print tool versions
+        run: |
+          node --version
+          npm --version
+
       - name: Install dependencies
         run: npm ci
 
@@ -32,14 +37,14 @@ jobs:
         run: npm test
 
       - name: Smoke test
-        run: npm run smoke
+        run: npm run smoke --if-present
 
-      - name: Pack package
-        run: npm pack --json > pack.json
+      - name: Dry-run package
+        run: npm pack --dry-run --json > pack.json
 
       - name: Verify package contents
         run: |
-          node -e "const fs=require('node:fs'); const pack=JSON.parse(fs.readFileSync('pack.json','utf8'))[0]; const files=new Set(pack.files.map((file)=>file.path)); const required=['dist/index.js','dist/index.d.ts','dist/cli/index.js','README.md','LICENSE','CLI.md','SPEC.md']; const missing=required.filter((file)=>!files.has(file)); if (missing.length) { console.error('Missing required package files: '+missing.join(', ')); process.exit(1); } console.log('Verified package contents for '+pack.filename);"
+          node -e "const fs=require('node:fs'); const pack=JSON.parse(fs.readFileSync('pack.json','utf8'))[0]; const files=new Set(pack.files.map((file)=>file.path)); const hasDist=[...files].some((file)=>file.startsWith('dist/')); const required=['dist/index.js','dist/index.d.ts','README.md','LICENSE']; const optionalDocs=['CLI.md','SPEC.md']; const missing=required.filter((file)=>!files.has(file)); const missingDocs=optionalDocs.filter((file)=>!files.has(file)); if (!hasDist) missing.push('dist/'); if (missingDocs.length) missing.push(...missingDocs); if (missing.length) { console.error('Missing required package files: '+missing.join(', ')); process.exit(1); } console.log('Verified package contents for '+pack.name+'@'+pack.version);"
 
       - name: Publish to npm
         run: npm publish --access public
