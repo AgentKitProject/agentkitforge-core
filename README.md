@@ -13,7 +13,7 @@ npm install
 The AgentKitForge app consumes this package by Git tag for now, for example:
 
 ```json
-"@agentkitforge/core": "github:BillBoardApp/agentkitforge-core#v0.1.0"
+"@agentkitforge/core": "github:AgentKitProject/agentkitforge-core#v0.1.0"
 ```
 
 Git installs run the package `prepare` script, which builds `dist/` from source during install. The package entrypoints point at the built output:

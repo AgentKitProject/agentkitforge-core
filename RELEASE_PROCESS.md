@@ -32,7 +32,7 @@ GitHub Release titles use:
 AgentKitForge Core vX.Y.Z
 ```
 
-The app consumes `agentkitforge-core` by Git tag for now, for example `github:BillBoardApp/agentkitforge-core#v0.1.0`. Git installs run the package `prepare` script, which builds `dist/` from source during install. Generated `dist/` output is not committed in this phase.
+The app consumes `agentkitforge-core` by Git tag for now, for example `github:AgentKitProject/agentkitforge-core#v0.1.0`. Git installs run the package `prepare` script, which builds `dist/` from source during install. Generated `dist/` output is not committed in this phase.
 
 There is no npm publishing in this phase, and this repository must not add `NPM_TOKEN` or an npm publish workflow until npm release ownership and permissions are intentionally configured.
 
