@@ -1,19 +1,28 @@
-import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
+import { safeListFilesRecursive } from "../fs/safety.js";
 
-export async function packageAgentKit(rootPath: string, outFile: string): Promise<string> {
+export interface PackageAgentKitOptions {
+  maxFiles?: number;
+  maxBytes?: number;
+}
+
+export async function packageAgentKit(
+  rootPath: string,
+  outFile: string,
+  options: PackageAgentKitOptions = {}
+): Promise<string> {
   const resolvedRoot = path.resolve(rootPath);
   const resolvedOut = path.resolve(outFile);
   const zip = new JSZip();
 
-  for (const filePath of await listFilesRecursive(resolvedRoot)) {
-    const relativePath = path.relative(resolvedRoot, filePath).replaceAll("\\", "/");
-    if (shouldSkip(relativePath, resolvedOut, filePath)) {
+  for (const file of await safeListFilesRecursive(resolvedRoot, options)) {
+    if (shouldSkip(file.relativePath, resolvedOut, file.absolutePath)) {
       continue;
     }
 
-    zip.file(relativePath, await readFile(filePath));
+    zip.file(file.relativePath, await readFile(file.absolutePath));
   }
 
   const output = await zip.generateAsync({
@@ -24,26 +33,6 @@ export async function packageAgentKit(rootPath: string, outFile: string): Promis
   await mkdir(path.dirname(resolvedOut), { recursive: true });
   await writeFile(resolvedOut, output);
   return resolvedOut;
-}
-
-async function listFilesRecursive(rootPath: string): Promise<string[]> {
-  const entries = await readdir(rootPath, { withFileTypes: true });
-  const files: string[] = [];
-
-  for (const entry of entries) {
-    if (entry.name === ".git" || entry.name === "node_modules") {
-      continue;
-    }
-
-    const entryPath = path.join(rootPath, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listFilesRecursive(entryPath)));
-    } else if (entry.isFile()) {
-      files.push(entryPath);
-    }
-  }
-
-  return files.sort();
 }
 
 function shouldSkip(relativePath: string, outFile: string, filePath: string): boolean {

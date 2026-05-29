@@ -1,10 +1,19 @@
 import { z } from "zod";
+import { assertSafeRelativePath } from "../fs/safety.js";
 import { preparedPromptSchema } from "../prompts/schema.js";
 
 const idSchema = z
   .string()
   .min(1)
   .regex(/^[a-z0-9][a-z0-9-]*$/, "Use lowercase letters, numbers, and hyphens");
+const safeRelativePathSchema = z.string().min(1).refine((value) => {
+  try {
+    assertSafeRelativePath(value);
+    return true;
+  } catch {
+    return false;
+  }
+}, "Use a safe relative path");
 
 export const skillDraftSchema = z
   .object({
@@ -38,7 +47,7 @@ export const exampleDraftSchema = z
 export const templateDraftSchema = z
   .object({
     id: idSchema,
-    path: z.string().min(1),
+    path: safeRelativePathSchema,
     content: z.string().min(1)
   })
   .strict();

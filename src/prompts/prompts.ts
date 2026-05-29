@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
+import { resolveInside } from "../fs/safety.js";
 import { readAgentKit } from "../package/reader.js";
 import type { AgentKitManifest, ValidationIssue } from "../types.js";
 import { preparedPromptSchema, type PreparedPrompt, type PreparedPromptInput } from "./schema.js";
@@ -38,7 +39,7 @@ export async function listPreparedPrompts(kitPath: string): Promise<PreparedProm
 
   const prompts = await Promise.all(
     promptPaths.sort().map(async (promptPath) => {
-      const prompt = await loadPreparedPrompt(path.join(kit.rootPath, promptPath));
+      const prompt = await loadPreparedPrompt(resolveInside(kit.rootPath, promptPath));
       const manifestPrompt = promptRefs?.find((entry) => entry.path === promptPath);
       if (manifestPrompt && manifestPrompt.id !== prompt.id) {
         throw new Error(

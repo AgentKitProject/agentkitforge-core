@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
+import { resolveInside } from "../fs/safety.js";
 import { parseSkillMarkdown } from "../validation/skill.js";
 import { readAgentKit } from "../package/reader.js";
 import { listPreparedPrompts } from "../prompts/prompts.js";
@@ -25,7 +26,7 @@ export async function loadAgentKitAsDraft(kitPath: string): Promise<LoadAgentKit
 
   const skills = [];
   for (const skill of kit.manifest.skills) {
-    const skillPath = path.join(kit.rootPath, skill.path);
+    const skillPath = resolveInside(kit.rootPath, skill.path);
     const parsed = parseSkillMarkdown(await readFile(skillPath, "utf8"), skillPath);
     sourceFiles.push(skill.path);
     skills.push({

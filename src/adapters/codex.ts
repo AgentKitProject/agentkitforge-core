@@ -1,8 +1,13 @@
-import { cp, lstat, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { AgentKitManifest, AgentKitSkillManifest } from "../types.js";
 import { readAgentKit } from "../package/reader.js";
+import {
+  assertSafeDestinationDirectory,
+  assertSafeId,
+  resolveInside,
+  safeCopyDirectory
+} from "../fs/safety.js";
 
 export type AgentKitTarget = "codex" | "claude-code";
 
@@ -31,7 +36,11 @@ export async function exportAgentKitToCodex(
   }
 
   const destinationRoot = path.resolve(destinationSkillsDir);
-  await assertSafeDestination(destinationRoot);
+  assertSafeId(kit.manifest.id, "kit id");
+  for (const skill of kit.manifest.skills) {
+    assertSafeId(skill.id, "skill id");
+  }
+  await assertSafeDestinationDirectory(destinationRoot);
   await mkdir(destinationRoot, { recursive: true });
 
   const createIndexSkill = options.createIndexSkill !== false;
@@ -45,7 +54,7 @@ export async function exportAgentKitToCodex(
   const exportedSkillFolders: string[] = [];
   for (const skill of [...kit.manifest.skills].sort((left, right) => left.id.localeCompare(right.id))) {
     const folderName = folderNameForSkill(kit.manifest, skill);
-    const destinationFolder = path.join(destinationRoot, folderName);
+    const destinationFolder = resolveInside(destinationRoot, folderName);
     await mkdir(destinationFolder, { recursive: true });
     await exportSkillFolder(kit.rootPath, kit.manifest, skill, destinationFolder);
     exportedSkillFolders.push(destinationFolder);
@@ -54,9 +63,9 @@ export async function exportAgentKitToCodex(
   let generatedIndexFolder: string | undefined;
   if (createIndexSkill) {
     const folderName = folderNameForIndex(kit.manifest);
-    const destinationFolder = path.join(destinationRoot, folderName);
+    const destinationFolder = resolveInside(destinationRoot, folderName);
     await mkdir(destinationFolder, { recursive: true });
-    await writeFile(path.join(destinationFolder, "SKILL.md"), renderIndexSkill(kit.manifest), "utf8");
+    await writeFile(resolveInside(destinationFolder, "SKILL.md"), renderIndexSkill(kit.manifest), "utf8");
     await writeMarker(destinationFolder, kit.manifest, "index");
     generatedIndexFolder = destinationFolder;
   }
@@ -75,21 +84,11 @@ async function exportSkillFolder(
   skill: AgentKitSkillManifest,
   destinationFolder: string
 ): Promise<void> {
-  const sourceSkillFile = path.join(kitRoot, skill.path);
+  const sourceSkillFile = resolveInside(kitRoot, skill.path);
   const sourceSkillDir = path.dirname(sourceSkillFile);
-  const entries = await readdir(sourceSkillDir, { withFileTypes: true });
+  await safeCopyDirectory(sourceSkillDir, destinationFolder);
 
-  for (const entry of entries) {
-    const source = path.join(sourceSkillDir, entry.name);
-    const destination = path.join(destinationFolder, entry.name);
-    if (entry.isDirectory()) {
-      await cp(source, destination, { recursive: true });
-    } else if (entry.isFile()) {
-      await cp(source, destination);
-    }
-  }
-
-  await writeFile(path.join(destinationFolder, "AGENTKIT.md"), renderSkillAgentKitReadme(manifest, skill), "utf8");
+  await writeFile(resolveInside(destinationFolder, "AGENTKIT.md"), renderSkillAgentKitReadme(manifest, skill), "utf8");
   await writeMarker(destinationFolder, manifest, skill.id);
 }
 
@@ -100,7 +99,7 @@ async function prepareDestinationFolders(
 ): Promise<void> {
   const existingFolders = [];
   for (const folderName of plannedFolders) {
-    const folderPath = path.join(destinationRoot, folderName);
+    const folderPath = resolveInside(destinationRoot, folderName);
     if (await exists(folderPath)) {
       existingFolders.push(folderPath);
     }
@@ -119,7 +118,7 @@ async function prepareDestinationFolders(
 }
 
 async function assertAgentKitForgeGeneratedFolder(folderPath: string): Promise<void> {
-  const markerPath = path.join(folderPath, MARKER_FILE);
+  const markerPath = resolveInside(folderPath, MARKER_FILE);
   if (!(await exists(markerPath))) {
     throw new Error(`Refusing to remove non-AgentKitForge folder: ${folderPath}`);
   }
@@ -136,7 +135,7 @@ async function writeMarker(
   skillId: string
 ): Promise<void> {
   await writeFile(
-    path.join(destinationFolder, MARKER_FILE),
+    resolveInside(destinationFolder, MARKER_FILE),
     `${JSON.stringify(
       {
         generatedBy: "agentkitforge",
@@ -149,32 +148,6 @@ async function writeMarker(
     )}\n`,
     "utf8"
   );
-}
-
-async function assertSafeDestination(destinationRoot: string): Promise<void> {
-  const resolved = path.resolve(destinationRoot);
-  const parsed = path.parse(resolved);
-  const home = path.resolve(os.homedir());
-  const key = comparablePath(resolved);
-
-  if (key === comparablePath(parsed.root)) {
-    throw new Error(`Refusing to export to filesystem root: ${resolved}`);
-  }
-
-  if (key === comparablePath(home)) {
-    throw new Error(`Refusing to export to user home directory: ${resolved}`);
-  }
-
-  if (await exists(resolved)) {
-    const stats = await lstat(resolved);
-    if (!stats.isDirectory()) {
-      throw new Error(`Refusing to export to non-directory path: ${resolved}`);
-    }
-
-    if (stats.isSymbolicLink()) {
-      throw new Error(`Refusing to export to symbolic link: ${resolved}`);
-    }
-  }
 }
 
 function renderSkillAgentKitReadme(manifest: AgentKitManifest, skill: AgentKitSkillManifest): string {
@@ -231,9 +204,4 @@ async function exists(filePath: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-function comparablePath(input: string): string {
-  const normalized = path.resolve(input);
-  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
 }

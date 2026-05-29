@@ -1,6 +1,7 @@
 import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { ZodError } from "zod";
+import { resolveInside, safeListFilesRecursive, normalizePath } from "../fs/safety.js";
 import { agentKitManifestSchema } from "../schema/agentkit.js";
 import { readYamlFile } from "../package/reader.js";
 import { loadPreparedPrompt } from "../prompts/prompts.js";
@@ -102,7 +103,18 @@ export async function validateAgentKit(
 
   if (manifest) {
     for (const skill of manifest.skills) {
-      const skillPath = path.join(resolvedRoot, skill.path);
+      let skillPath: string;
+      try {
+        skillPath = resolveInside(resolvedRoot, skill.path);
+      } catch (error) {
+        issues.push({
+          severity: "error",
+          code: "manifest.skill_path.unsafe",
+          message: error instanceof Error ? error.message : `Unsafe skill path: ${skill.path}`,
+          path: skill.path
+        });
+        continue;
+      }
       if (!(await exists(skillPath))) {
         issues.push({
           severity: "error",
@@ -135,7 +147,18 @@ async function validatePreparedPromptFiles(
   const issues: ValidationIssue[] = [];
 
   for (const prompt of manifest.prompts ?? []) {
-    const promptPath = path.join(rootPath, prompt.path);
+    let promptPath: string;
+    try {
+      promptPath = resolveInside(rootPath, prompt.path);
+    } catch (error) {
+      issues.push({
+        severity: "error",
+        code: "manifest.prompt_path.unsafe",
+        message: error instanceof Error ? error.message : `Unsafe prepared prompt path: ${prompt.path}`,
+        path: prompt.path
+      });
+      continue;
+    }
     if (!(await exists(promptPath))) {
       issues.push({
         severity: "error",
@@ -190,18 +213,30 @@ async function validateDeclaredScripts(
     return [];
   }
 
-  const scriptFiles = await listFilesRecursive(scriptsPath);
+  const scriptFiles = (await safeListFilesRecursive(scriptsPath)).map((file) => file.absolutePath);
   if (scriptFiles.length === 0) {
     return [];
   }
 
-  const declared = new Set(
-    (manifest.scripts ?? []).map((script) =>
-      typeof script === "string" ? normalizePath(script) : normalizePath(script.path)
-    )
-  );
+  const declared = new Set<string>();
+  const issues: ValidationIssue[] = [];
+  for (const script of manifest.scripts ?? []) {
+    const scriptPath = typeof script === "string" ? script : script.path;
+    try {
+      declared.add(normalizePath(path.relative(rootPath, resolveInside(rootPath, scriptPath))));
+    } catch (error) {
+      issues.push({
+        severity: "error",
+        code: "scripts.path.unsafe",
+        message: error instanceof Error ? error.message : `Unsafe script path: ${scriptPath}`,
+        path: scriptPath
+      });
+    }
+  }
 
-  return scriptFiles
+  return [
+    ...issues,
+    ...scriptFiles
     .map((file) => normalizePath(path.relative(rootPath, file)))
     .filter((file) => !declared.has(file))
     .map((file) => ({
@@ -209,7 +244,8 @@ async function validateDeclaredScripts(
       code: "scripts.undeclared",
       message: `Script file is not declared in agentkit.yaml: ${file}`,
       path: file
-    }));
+    }))
+  ];
 }
 
 async function findSkillFiles(skillsRoot: string): Promise<string[]> {
@@ -230,22 +266,6 @@ async function findSkillFiles(skillsRoot: string): Promise<string[]> {
   return skillFiles;
 }
 
-async function listFilesRecursive(rootPath: string): Promise<string[]> {
-  const entries = await readdir(rootPath, { withFileTypes: true });
-  const files: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = path.join(rootPath, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listFilesRecursive(entryPath)));
-    } else if (entry.isFile()) {
-      files.push(entryPath);
-    }
-  }
-
-  return files;
-}
-
 async function exists(filePath: string): Promise<boolean> {
   try {
     await stat(filePath);
@@ -257,8 +277,4 @@ async function exists(filePath: string): Promise<boolean> {
 
 function isLikelyFile(requiredPath: string): boolean {
   return path.extname(requiredPath) !== "" || requiredPath === "LICENSE";
-}
-
-function normalizePath(input: string): string {
-  return input.replaceAll("\\", "/");
 }

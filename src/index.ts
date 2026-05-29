@@ -68,6 +68,7 @@ export { validateAgentKit } from "./validation/validator.js";
 export { parseSkillMarkdown, validateSkillFile } from "./validation/skill.js";
 export type { AgentKitTemplateName } from "./init/templates.js";
 export type { CreateAgentKitOptions, CreateAgentKitResult } from "./init/create.js";
+export type { PackageAgentKitOptions } from "./package/packager.js";
 export type {
   AgentKitDraft,
   ExampleDraft,

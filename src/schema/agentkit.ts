@@ -1,18 +1,26 @@
 import { z } from "zod";
+import { assertSafeRelativePath, isSafeId } from "../fs/safety.js";
+
+const safeIdSchema = z.string().min(1).refine(isSafeId, "Use lowercase letters, numbers, and hyphens");
+const safePathSchema = z.string().min(1).refine((value) => {
+  try {
+    assertSafeRelativePath(value);
+    return true;
+  } catch {
+    return false;
+  }
+}, "Use a safe relative path inside the Agent Kit");
 
 export const agentKitSkillSchema = z.object({
-  id: z.string().min(1),
-  path: z.string().min(1),
+  id: safeIdSchema,
+  path: safePathSchema,
   description: z.string().min(1),
   triggers: z.array(z.string().min(1)).min(1)
 });
 
 export const agentKitPromptSchema = z.object({
-  id: z
-    .string()
-    .min(1)
-    .regex(/^[a-z0-9][a-z0-9-]*$/, "Use lowercase letters, numbers, and hyphens"),
-  path: z.string().min(1),
+  id: safeIdSchema,
+  path: safePathSchema,
   description: z.string().min(1)
 });
 
@@ -20,7 +28,7 @@ export const agentKitManifestSchema = z
   .object({
     schemaVersion: z.string().min(1),
     kind: z.string().min(1),
-    id: z.string().min(1),
+    id: safeIdSchema,
     name: z.string().min(1),
     version: z.string().min(1),
     description: z.string().min(1),
@@ -46,10 +54,10 @@ export const agentKitManifestSchema = z
     scripts: z
       .array(
         z.union([
-          z.string().min(1),
+          safePathSchema,
           z.object({
             id: z.string().min(1).optional(),
-            path: z.string().min(1),
+            path: safePathSchema,
             description: z.string().min(1).optional()
           })
         ])

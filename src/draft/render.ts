@@ -2,6 +2,7 @@ import { mkdir, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
 import { ZodError } from "zod";
+import { assertSafeId, resolveInside, safeRemoveDirectoryContents } from "../fs/safety.js";
 import { agentKitDraftSchema, type AgentKitDraft } from "./schema.js";
 
 export interface RenderAgentKitDraftOptions {
@@ -38,12 +39,25 @@ export async function renderAgentKitDraft(
   }
 
   const draft = parsed.data;
+  assertSafeId(draft.id, "draft id");
+  for (const skill of draft.skills) {
+    assertSafeId(skill.id, "skill id");
+  }
+  for (const prompt of draft.preparedPrompts) {
+    assertSafeId(prompt.id, "prepared prompt id");
+  }
+  for (const policy of draft.policies) {
+    assertSafeId(policy.id, "policy id");
+  }
+  for (const example of draft.examples) {
+    assertSafeId(example.id, "example id");
+  }
   const resolvedRoot = path.resolve(targetDir);
   await assertCanWriteTarget(resolvedRoot, options.force === true);
 
   const files = buildDraftFiles(draft);
   for (const [relativePath, content] of files) {
-    const filePath = path.join(resolvedRoot, relativePath);
+    const filePath = resolveInside(resolvedRoot, relativePath);
     await mkdir(path.dirname(filePath), { recursive: true });
     await writeFile(filePath, content, "utf8");
   }
@@ -203,6 +217,9 @@ async function assertCanWriteTarget(targetPath: string, force: boolean): Promise
       throw new Error(
         `Refusing to render Agent Kit draft into non-empty directory: ${targetPath}. Use --force to overwrite generated files.`
       );
+    }
+    if (entries.length > 0) {
+      await safeRemoveDirectoryContents(targetPath);
     }
   } catch (error) {
     if (isNotFoundError(error)) {

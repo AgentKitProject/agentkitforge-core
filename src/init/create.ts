@@ -1,6 +1,6 @@
-import { lstat, mkdir, readdir, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { mkdir, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { resolveInside, safeRemoveDirectoryContents } from "../fs/safety.js";
 import { templates, renderTemplate, type AgentKitTemplateName } from "./templates.js";
 
 export interface CreateAgentKitOptions {
@@ -31,7 +31,7 @@ export async function createAgentKit(
 
   const files = Object.entries(template.files);
   for (const [relativePath, content] of files) {
-    const filePath = path.join(resolvedRoot, relativePath);
+    const filePath = resolveInside(resolvedRoot, relativePath);
     await mkdir(path.dirname(filePath), { recursive: true });
     await writeFile(filePath, renderTemplate(content, options), "utf8");
   }
@@ -53,7 +53,7 @@ async function assertCanWriteTarget(targetPath: string, force: boolean): Promise
     }
 
     if (entries.length > 0) {
-      await cleanTargetDirectory(targetPath);
+      await safeRemoveDirectoryContents(targetPath);
     }
   } catch (error) {
     if (isNotFoundError(error)) {
@@ -63,48 +63,6 @@ async function assertCanWriteTarget(targetPath: string, force: boolean): Promise
 
     throw error;
   }
-}
-
-async function cleanTargetDirectory(targetPath: string): Promise<void> {
-  await assertSafeCleanTarget(targetPath);
-
-  for (const entry of await readdir(targetPath)) {
-    await rm(path.join(targetPath, entry), { recursive: true, force: true });
-  }
-}
-
-async function assertSafeCleanTarget(targetPath: string): Promise<void> {
-  const resolvedTarget = path.resolve(targetPath);
-  const parsed = path.parse(resolvedTarget);
-  const home = path.resolve(os.homedir());
-  const repoRoot = path.resolve(process.cwd());
-  const targetKey = comparablePath(resolvedTarget);
-
-  if (targetKey === comparablePath(parsed.root)) {
-    throw new Error(`Refusing to clean filesystem root: ${resolvedTarget}`);
-  }
-
-  if (targetKey === comparablePath(home)) {
-    throw new Error(`Refusing to clean user home directory: ${resolvedTarget}`);
-  }
-
-  if (targetKey === comparablePath(repoRoot)) {
-    throw new Error(`Refusing to clean current repository root: ${resolvedTarget}`);
-  }
-
-  const stats = await lstat(resolvedTarget);
-  if (!stats.isDirectory()) {
-    throw new Error(`Refusing to clean non-directory path: ${resolvedTarget}`);
-  }
-
-  if (stats.isSymbolicLink()) {
-    throw new Error(`Refusing to clean symbolic link: ${resolvedTarget}`);
-  }
-}
-
-function comparablePath(input: string): string {
-  const normalized = path.resolve(input);
-  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
 }
 
 function isNotFoundError(error: unknown): boolean {

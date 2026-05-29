@@ -1,8 +1,13 @@
-import { cp, lstat, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { copyFile, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { AgentKitManifest, AgentKitSkillManifest } from "../types.js";
 import { readAgentKit } from "../package/reader.js";
+import {
+  assertSafeDestinationDirectory,
+  assertSafeId,
+  resolveInside,
+  safeCopyDirectory
+} from "../fs/safety.js";
 
 export interface ClaudeCodeExportOptions {
   force?: boolean;
@@ -30,36 +35,40 @@ export async function exportAgentKitToClaudeCode(
   }
 
   const resolvedDestination = path.resolve(destinationDir);
-  await assertSafeDestination(resolvedDestination);
+  assertSafeId(kit.manifest.id, "kit id");
+  for (const skill of kit.manifest.skills) {
+    assertSafeId(skill.id, "skill id");
+  }
+  await assertSafeDestinationDirectory(resolvedDestination);
   await mkdir(resolvedDestination, { recursive: true });
 
-  const pluginFolder = path.join(resolvedDestination, pluginFolderName(kit.manifest));
+  const pluginFolder = resolveInside(resolvedDestination, pluginFolderName(kit.manifest));
   await preparePluginFolder(pluginFolder, options.force === true);
   await mkdir(pluginFolder, { recursive: true });
 
   await writePluginManifest(pluginFolder, kit.manifest);
   await writeMarker(pluginFolder, kit.manifest);
-  await copyIfPresent(path.join(kit.rootPath, "AGENTKIT.md"), path.join(pluginFolder, "AGENTKIT.md"));
-  await copyIfPresent(path.join(kit.rootPath, "README.md"), path.join(pluginFolder, "README.md"));
+  await copyIfPresent(resolveInside(kit.rootPath, "AGENTKIT.md"), resolveInside(pluginFolder, "AGENTKIT.md"));
+  await copyIfPresent(resolveInside(kit.rootPath, "README.md"), resolveInside(pluginFolder, "README.md"));
 
   const exportedSkillFolders: string[] = [];
   for (const skill of [...kit.manifest.skills].sort((left, right) => left.id.localeCompare(right.id))) {
-    const sourceSkillDir = path.dirname(path.join(kit.rootPath, skill.path));
-    const destinationSkillDir = path.join(pluginFolder, "skills", skill.id);
+    const sourceSkillDir = path.dirname(resolveInside(kit.rootPath, skill.path));
+    const destinationSkillDir = resolveInside(pluginFolder, `skills/${skill.id}`);
     await mkdir(path.dirname(destinationSkillDir), { recursive: true });
-    await cp(sourceSkillDir, destinationSkillDir, { recursive: true });
+    await safeCopyDirectory(sourceSkillDir, destinationSkillDir);
     exportedSkillFolders.push(destinationSkillDir);
   }
 
   for (const directory of SUPPORTING_DIRECTORIES) {
-    await copyDirectoryIfPresent(path.join(kit.rootPath, directory), path.join(pluginFolder, directory));
+    await copyDirectoryIfPresent(resolveInside(kit.rootPath, directory), resolveInside(pluginFolder, directory));
   }
 
   return {
     destinationDir: resolvedDestination,
     pluginFolder,
     exportedSkillFolders,
-    pluginManifestPath: path.join(pluginFolder, ".claude-plugin", "plugin.json"),
+    pluginManifestPath: resolveInside(pluginFolder, ".claude-plugin/plugin.json"),
     warnings: [
       "Claude Code plugin schema support is an initial AgentKitForge adapter; verify loading behavior with your Claude Code version."
     ]
@@ -82,7 +91,7 @@ async function preparePluginFolder(pluginFolder: string, force: boolean): Promis
 }
 
 async function assertAgentKitForgeGeneratedPlugin(pluginFolder: string): Promise<void> {
-  const markerPath = path.join(pluginFolder, MARKER_FILE);
+  const markerPath = resolveInside(pluginFolder, MARKER_FILE);
   if (!(await exists(markerPath))) {
     throw new Error(`Refusing to remove non-AgentKitForge plugin folder: ${pluginFolder}`);
   }
@@ -97,7 +106,7 @@ async function assertAgentKitForgeGeneratedPlugin(pluginFolder: string): Promise
 }
 
 async function writePluginManifest(pluginFolder: string, manifest: AgentKitManifest): Promise<void> {
-  const pluginManifestPath = path.join(pluginFolder, ".claude-plugin", "plugin.json");
+  const pluginManifestPath = resolveInside(pluginFolder, ".claude-plugin/plugin.json");
   await mkdir(path.dirname(pluginManifestPath), { recursive: true });
   await writeFile(
     pluginManifestPath,
@@ -127,7 +136,7 @@ async function writePluginManifest(pluginFolder: string, manifest: AgentKitManif
 
 async function writeMarker(pluginFolder: string, manifest: AgentKitManifest): Promise<void> {
   await writeFile(
-    path.join(pluginFolder, MARKER_FILE),
+    resolveInside(pluginFolder, MARKER_FILE),
     `${JSON.stringify(
       {
         generatedBy: "agentkitforge",
@@ -147,7 +156,8 @@ async function copyIfPresent(source: string, destination: string): Promise<void>
   }
 
   await mkdir(path.dirname(destination), { recursive: true });
-  await cp(source, destination);
+  await mkdir(path.dirname(destination), { recursive: true });
+  await copyFile(source, destination);
 }
 
 async function copyDirectoryIfPresent(source: string, destination: string): Promise<void> {
@@ -155,33 +165,7 @@ async function copyDirectoryIfPresent(source: string, destination: string): Prom
     return;
   }
 
-  await cp(source, destination, { recursive: true });
-}
-
-async function assertSafeDestination(destinationRoot: string): Promise<void> {
-  const resolved = path.resolve(destinationRoot);
-  const parsed = path.parse(resolved);
-  const home = path.resolve(os.homedir());
-  const key = comparablePath(resolved);
-
-  if (key === comparablePath(parsed.root)) {
-    throw new Error(`Refusing to export to filesystem root: ${resolved}`);
-  }
-
-  if (key === comparablePath(home)) {
-    throw new Error(`Refusing to export to user home directory: ${resolved}`);
-  }
-
-  if (await exists(resolved)) {
-    const stats = await lstat(resolved);
-    if (!stats.isDirectory()) {
-      throw new Error(`Refusing to export to non-directory path: ${resolved}`);
-    }
-
-    if (stats.isSymbolicLink()) {
-      throw new Error(`Refusing to export to symbolic link: ${resolved}`);
-    }
-  }
+  await safeCopyDirectory(source, destination);
 }
 
 function pluginFolderName(manifest: AgentKitManifest): string {
@@ -195,9 +179,4 @@ async function exists(filePath: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-function comparablePath(input: string): string {
-  const normalized = path.resolve(input);
-  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
 }

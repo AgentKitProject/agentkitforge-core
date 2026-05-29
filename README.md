@@ -20,6 +20,27 @@ npm run build
 npm test
 ```
 
+## Smoke Test
+
+```bash
+npm run build
+npm run smoke
+```
+
+The smoke test exercises the built CLI across init, validation, packaging, one-file export, prepared prompts, context building, target exports, inspection, summary, and load-as-draft workflows.
+
+## Security Checks
+
+GitHub Actions runs security scanning on pushes, pull requests, and manual dispatch. Blocking checks currently include gitleaks secret scanning and `npm audit --audit-level=critical`. A non-blocking high vulnerability audit is reported in logs. CodeQL JavaScript/TypeScript analysis uploads findings to GitHub code scanning; branch protection should require CodeQL once the results are stable.
+
+See [SECURITY_CI_POLICY.md](SECURITY_CI_POLICY.md) for the v0.1 failure policy.
+
+## Agent Kit Input Safety
+
+Agent Kit folders are treated as untrusted input. Manifest-controlled paths must be safe relative paths that stay inside the kit root, and IDs used for package/export folder names must be path-safe kebab-case identifiers. Core reports validation errors for unsafe manifest paths or IDs instead of reading, copying, packaging, or exporting them.
+
+Core never executes files from `scripts/`; it only validates whether script files are declared. Packaging, context building, and target exports reject symbolic links, skip generated or dependency-heavy folders such as `exports/`, `.git`, `node_modules`, `dist`, and `build`, and apply conservative file-count and byte limits to avoid unexpectedly large or malicious kits.
+
 ## CLI
 
 Create a blank Agent Kit:

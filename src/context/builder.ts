@@ -1,5 +1,6 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { resolveInside, safeListFilesRecursive } from "../fs/safety.js";
 import { readAgentKit } from "../package/reader.js";
 import type { AgentKitSkillManifest } from "../types.js";
 import type { AgentKitContextRequest, AgentKitContextResult } from "./types.js";
@@ -48,7 +49,11 @@ export async function buildAgentKitContext(
 
   for (const optionalDirectory of OPTIONAL_DIRECTORIES) {
     if (request[optionalDirectory.key] === true) {
-      includedFiles.push(...(await readDirectoryFiles(kit.rootPath, optionalDirectory.directory)));
+      try {
+        includedFiles.push(...(await readDirectoryFiles(kit.rootPath, optionalDirectory.directory, request)));
+      } catch (error) {
+        warnings.push(error instanceof Error ? error.message : `Skipped ${optionalDirectory.directory}`);
+      }
     }
   }
 
@@ -142,38 +147,30 @@ function applyMaxSkills(
 }
 
 async function readContextFile(rootPath: string, relativePath: string): Promise<ContextFile> {
+  const resolvedPath = resolveInside(rootPath, relativePath);
   return {
     relativePath: normalizePath(relativePath),
-    content: await readFile(path.join(rootPath, relativePath), "utf8")
+    content: await readFile(resolvedPath, "utf8")
   };
 }
 
-async function readDirectoryFiles(rootPath: string, relativeDirectory: string): Promise<ContextFile[]> {
-  const directoryPath = path.join(rootPath, relativeDirectory);
-  if (!(await exists(directoryPath))) {
+async function readDirectoryFiles(
+  rootPath: string,
+  relativeDirectory: string,
+  request: AgentKitContextRequest
+): Promise<ContextFile[]> {
+  const directoryPath = resolveInside(rootPath, relativeDirectory);
+  if (!(await existsDirectory(directoryPath))) {
     return [];
   }
 
-  const files = await listFilesRecursive(directoryPath);
+  const files = await safeListFilesRecursive(directoryPath, {
+    maxFiles: request.maxFiles,
+    maxBytes: request.maxBytes
+  });
   return Promise.all(
-    files.map((file) => readContextFile(rootPath, path.relative(rootPath, file)))
+    files.map((file) => readContextFile(rootPath, path.relative(rootPath, file.absolutePath)))
   );
-}
-
-async function listFilesRecursive(rootPath: string): Promise<string[]> {
-  const entries = await readdir(rootPath, { withFileTypes: true });
-  const files: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = path.join(rootPath, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listFilesRecursive(entryPath)));
-    } else if (entry.isFile()) {
-      files.push(entryPath);
-    }
-  }
-
-  return files.sort();
 }
 
 function dedupeFiles(files: ContextFile[]): ContextFile[] {
@@ -215,10 +212,9 @@ function renderUserContext(request: AgentKitContextRequest): string {
   return `User task:\n${request.userTask}\n`;
 }
 
-async function exists(filePath: string): Promise<boolean> {
+async function existsDirectory(filePath: string): Promise<boolean> {
   try {
-    await stat(filePath);
-    return true;
+    return (await stat(filePath)).isDirectory();
   } catch {
     return false;
   }

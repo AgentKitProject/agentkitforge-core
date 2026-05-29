@@ -13,6 +13,8 @@ export interface AgentKitContextRequest {
   includeReferences?: boolean;
   includePrompts?: boolean;
   maxSkills?: number;
+  maxFiles?: number;
+  maxBytes?: number;
 }
 
 export interface AgentKitContextResult {
