@@ -16,6 +16,13 @@ Before `1.0.0`, the public API and Agent Kit schema are still stabilizing.
 - Patch versions, such as `0.1.1`, are for fixes, security fixes, documentation corrections, and compatible improvements.
 - Breaking changes should be documented clearly in release notes.
 
+Release Please uses Conventional Commits to determine version bumps:
+
+- `feat:` creates a minor release.
+- `fix:` creates a patch release.
+- `security:` creates a patch release.
+- Breaking changes before `1.0.0` create a minor release, but must be documented in release notes and any affected spec docs.
+
 ## Agent Kit Schema Compatibility
 
 Agent Kit manifests include `schemaVersion`.

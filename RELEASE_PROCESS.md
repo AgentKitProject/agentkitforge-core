@@ -14,15 +14,48 @@ v0.2.0
 
 The current target is `v0.1.0 Public Preview`.
 
+## Automated Release Flow
+
+Release Please creates release PRs automatically from Conventional Commits merged to `main`.
+
+The release PR updates:
+
+- `package.json`
+- `package-lock.json`
+- `CHANGELOG.md`
+
+Release happens when the release PR is merged. Release Please then creates the GitHub tag and GitHub Release.
+
+GitHub Release titles use:
+
+```text
+AgentKitForge Core vX.Y.Z
+```
+
+The app consumes `agentkitforge-core` by Git tag for now. There is no npm publishing in this phase, and this repository must not add `NPM_TOKEN` or an npm publish workflow until npm release ownership and permissions are intentionally configured.
+
+## Conventional Commits
+
+Release Please uses Conventional Commits:
+
+- `feat:` creates a minor release.
+- `fix:` creates a patch release.
+- `security:` creates a patch release.
+- Breaking changes use `!` or a `BREAKING CHANGE:` footer.
+- Before `1.0.0`, breaking changes are minor releases but must be documented.
+
+Examples:
+
+```text
+feat: add Cursor export adapter
+fix: prevent path traversal in kit validation
+docs: update CLI guide
+security: harden zip extraction
+```
+
 ## Release Branch and Tag Flow
 
-1. Confirm `main` contains the intended release changes.
-2. Create a release branch if final stabilization is needed, for example `release/v0.1.0`.
-3. Update `CHANGELOG.md` with release notes.
-4. Confirm `package.json` version matches the release.
-5. Run required checks locally and in GitHub Actions.
-6. Create an annotated tag, for example `v0.1.0`.
-7. Publish a GitHub Release from the tag.
+Use a release branch only when final stabilization is needed, for example `release/v0.1.0`. Tags are created by Release Please after the release PR is merged.
 
 ## Required Checks
 

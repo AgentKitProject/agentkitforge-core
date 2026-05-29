@@ -53,6 +53,26 @@ Please open an issue or discussion before starting work on:
 - Add or update tests for validation, packaging, rendering, and CLI behavior.
 - Update documentation when public APIs, CLI commands, package structure, or security behavior changes.
 
+## Conventional Commits
+
+Use Conventional Commits for all pull requests. Release Please uses commit messages to generate release PRs, changelog entries, Git tags, and GitHub Releases.
+
+Examples:
+
+```text
+feat: add Cursor export adapter
+fix: prevent path traversal in kit validation
+docs: update CLI guide
+security: harden zip extraction
+```
+
+Version impact:
+
+- `feat:` creates a minor release.
+- `fix:` creates a patch release.
+- `security:` creates a patch release.
+- Breaking changes use `!` or a `BREAKING CHANGE:` footer. Before `1.0.0`, breaking changes are minor releases but must be documented.
+
 ## Pull Request Checklist
 
 Before opening a pull request, run:
