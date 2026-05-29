@@ -8,6 +8,22 @@ AgentKitForge Core is the initial TypeScript engine for validating, exporting, a
 npm install
 ```
 
+## Git Tag Consumption
+
+The AgentKitForge app consumes this package by Git tag for now, for example:
+
+```json
+"@agentkitforge/core": "github:BillBoardApp/agentkitforge-core#v0.1.0"
+```
+
+Git installs run the package `prepare` script, which builds `dist/` from source during install. The package entrypoints point at the built output:
+
+- `main`: `dist/index.js`
+- `types`: `dist/index.d.ts`
+- `bin`: `dist/cli/index.js`
+
+Do not commit generated `dist/` output unless the repository convention changes. Npm publishing may be added later after ownership and release permissions are configured.
+
 ## Build
 
 ```bash
