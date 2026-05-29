@@ -8,6 +8,13 @@ This project follows Semantic Versioning. Before `1.0.0`, minor versions may inc
 
 - Added open-source governance, security, contribution, versioning, release, spec, and CLI documentation.
 
+## [0.2.0](https://github.com/BillBoardApp/agentkitforge-core/compare/v0.1.0...v0.2.0) (2026-05-29)
+
+
+### Features
+
+* prepare initial public preview ([61e8d7d](https://github.com/BillBoardApp/agentkitforge-core/commit/61e8d7d9c9a1efac31c6dc62b4ed9c42d97bf729))
+
 ## v0.1.0 Public Preview
 
 - Initial public preview target.
