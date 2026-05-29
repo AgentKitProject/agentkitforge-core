@@ -32,9 +32,38 @@ GitHub Release titles use:
 AgentKitForge Core vX.Y.Z
 ```
 
-The app consumes `agentkitforge-core` by Git tag for now, for example `github:AgentKitProject/agentkitforge-core#v0.1.0`. Git installs run the package `prepare` script, which builds `dist/` from source during install. Generated `dist/` output is not committed in this phase.
+AgentKitForge Core is published to npm as `@agentkitforge/core`. The scoped package must be published with public access:
 
-There is no npm publishing in this phase, and this repository must not add `NPM_TOKEN` or an npm publish workflow until npm release ownership and permissions are intentionally configured.
+```bash
+npm publish --access public
+```
+
+The app consumes `@agentkitforge/core` from npm using SemVer ranges, not GitHub tarballs. GitHub tags and GitHub Releases are still created by Release Please.
+
+Generated `dist/` output is not committed. `npm pack` and `npm publish` run `prepack`, which builds `dist/` from source before packaging.
+
+## Automated npm Publishing
+
+When Release Please publishes a GitHub Release, `.github/workflows/publish-npm.yml` runs on the `release: published` event and publishes `@agentkitforge/core` to npm.
+
+The publish workflow:
+
+1. Uses Node 24.
+2. Runs `npm ci`.
+3. Runs `npm run build`.
+4. Runs `npm test`.
+5. Runs `npm run smoke`.
+6. Runs `npm pack`.
+7. Verifies the tarball includes `dist/`, `README.md`, `LICENSE`, `CLI.md`, and `SPEC.md`.
+8. Runs `npm publish --access public`.
+
+The workflow uses npm Trusted Publishing through GitHub Actions OIDC and does not use `NPM_TOKEN`. Configure npm Trusted Publishing for package `@agentkitforge/core` in npm settings before relying on this workflow. The trusted publisher configuration must match:
+
+- Repository: `AgentKitProject/agentkitforge-core`
+- Workflow file: `.github/workflows/publish-npm.yml`
+- Package: `@agentkitforge/core`
+
+The first npm publish may require npm org/package setup. If a token fallback is ever added, it must be clearly optional, documented, and reviewed as a release-security change. Prefer npm two-factor authentication for maintainers and npm Trusted Publishing for automation.
 
 ## Conventional Commits
 
