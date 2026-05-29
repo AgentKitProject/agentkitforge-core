@@ -4,18 +4,24 @@
   "description": "Core package, validation, export, and packaging engine for AgentKitForge.",
   "type": "module",
   "bin": {
-    "agentkitforge": "./dist/cli/index.js"
+    "agentkitforge": "dist/cli/index.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
-    "builder",
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "CLI.md",
+    "SPEC.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "VERSIONING.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "prepare": "npm run build",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run build && npm test",
     "smoke": "node scripts/smoke.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -27,6 +33,13 @@
     "cli"
   ],
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AgentKitProject/agentkitforge-core"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "commander": "^14.0.2",
     "jszip": "^3.10.1",

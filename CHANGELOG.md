@@ -20,12 +20,12 @@ This project follows Semantic Versioning. Before `0.0.0`, minor versions may inc
 
 ### Features
 
-* prepare initial public preview ([61e8d7d](https://github.com/BillBoardApp/agentkitforge-core/commit/61e8d7d9c9a1efac31c6dc62b4ed9c42d97bf729))
+* prepare initial public preview ([61e8d7d](https://github.com/AgentKitProject/agentkitforge-core/commit/61e8d7d9c9a1efac31c6dc62b4ed9c42d97bf729))
 
 
 ### Bug Fixes
 
-* set initial release baseline ([29fc113](https://github.com/BillBoardApp/agentkitforge-core/commit/29fc11376ce64175dfb9564b5fa625dc24eb63d2))
+* set initial release baseline ([29fc113](https://github.com/AgentKitProject/agentkitforge-core/commit/29fc11376ce64175dfb9564b5fa625dc24eb63d2))
 
 ## v0.1.0 Public Preview
 

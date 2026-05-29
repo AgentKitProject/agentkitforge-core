@@ -3,8 +3,8 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "package-name": "agentkitforge-core",
-      "component": "AgentKitForgeCore",
+      "package-name": "@agentkitforge/core",
+      "component": "AgentKitForge Core",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": false,
       "bump-minor-pre-major": true,
