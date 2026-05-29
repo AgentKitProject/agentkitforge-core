@@ -25,7 +25,7 @@
     "validation",
     "cli"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "commander": "^14.0.2",
     "jszip": "^3.10.1",

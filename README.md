@@ -35,6 +35,17 @@ GitHub Actions runs security scanning on pushes, pull requests, and manual dispa
 
 See [SECURITY_CI_POLICY.md](SECURITY_CI_POLICY.md) for the v0.1 failure policy.
 
+## Project Documents
+
+- [SPEC.md](SPEC.md): Agent Kit public preview package specification.
+- [CLI.md](CLI.md): CLI command reference.
+- [CONTRIBUTING.md](CONTRIBUTING.md): Local setup, contribution scope, and PR expectations.
+- [SECURITY.md](SECURITY.md): Vulnerability reporting and supported versions.
+- [VERSIONING.md](VERSIONING.md): SemVer and schema compatibility policy.
+- [RELEASE_PROCESS.md](RELEASE_PROCESS.md): Release checklist and tagging flow.
+- [CHANGELOG.md](CHANGELOG.md): Release notes.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): Contributor conduct expectations.
+
 ## Agent Kit Input Safety
 
 Agent Kit folders are treated as untrusted input. Manifest-controlled paths must be safe relative paths that stay inside the kit root, and IDs used for package/export folder names must be path-safe kebab-case identifiers. Core reports validation errors for unsafe manifest paths or IDs instead of reading, copying, packaging, or exporting them.
