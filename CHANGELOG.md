@@ -2,7 +2,7 @@
 
 All notable changes to AgentKitForge Core will be documented in this file.
 
-This project follows Semantic Versioning. Before `1.0.0`, minor versions may include breaking changes.
+This project follows Semantic Versioning. Before `0.0.0`, minor versions may include breaking changes.
 
 ## Unreleased
 
