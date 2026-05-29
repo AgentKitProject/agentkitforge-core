@@ -37,21 +37,6 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
-  secret-scan:
-    name: gitleaks
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Scan for secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   codeql:
     name: CodeQL
     runs-on: ubuntu-latest

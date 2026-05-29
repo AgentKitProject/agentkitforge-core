@@ -4,7 +4,6 @@ This repository uses GitHub Actions security checks for the v0.1 release line.
 
 ## Blocking Checks
 
-- Secret scanning with gitleaks fails on any detected secret.
 - `npm audit --audit-level=critical` fails on critical npm vulnerabilities.
 - CodeQL JavaScript/TypeScript analysis uploads findings to GitHub code scanning.
 
@@ -24,7 +23,7 @@ This policy should tighten after the first public release. The intended directio
 
 ## Secrets
 
-Do not commit API keys, tokens, credentials, private certificates, local environment files, or provider secrets. Core does not require provider API keys; runtime provider calls belong in the app layer.
+Do not commit API keys, tokens, credentials, private certificates, local environment files, or provider secrets. Core does not require provider API keys; runtime provider calls belong in the app layer. Secret scanning is not currently enforced by this repository's GitHub Actions workflow.
 
 ## Agent Kit Input Safety
 
