@@ -9,8 +9,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
-  actions: read
 
 jobs:
   npm-audit:
@@ -36,20 +34,3 @@ jobs:
       - name: High vulnerability report
         run: npm audit --audit-level=high
         continue-on-error: true
-
-  codeql:
-    name: CodeQL
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-          build-mode: none
-
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3

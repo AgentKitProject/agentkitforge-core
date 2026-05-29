@@ -31,7 +31,7 @@ The smoke test exercises the built CLI across init, validation, packaging, one-f
 
 ## Security Checks
 
-GitHub Actions runs security scanning on pushes, pull requests, and manual dispatch. Blocking checks currently include `npm audit --audit-level=critical`. A non-blocking high vulnerability audit is reported in logs. CodeQL JavaScript/TypeScript analysis uploads findings to GitHub code scanning; branch protection should require CodeQL once the results are stable.
+GitHub Actions runs security scanning on pushes, pull requests, and manual dispatch. Blocking checks currently include `npm audit --audit-level=critical`. A non-blocking high vulnerability audit is reported in logs.
 
 See [SECURITY_CI_POLICY.md](SECURITY_CI_POLICY.md) for the v0.1 failure policy.
 

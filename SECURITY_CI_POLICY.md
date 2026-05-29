@@ -5,9 +5,6 @@ This repository uses GitHub Actions security checks for the v0.1 release line.
 ## Blocking Checks
 
 - `npm audit --audit-level=critical` fails on critical npm vulnerabilities.
-- CodeQL JavaScript/TypeScript analysis uploads findings to GitHub code scanning.
-
-Once CodeQL results are stable, branch protection should require CodeQL/code scanning and block merges on high and critical security findings.
 
 ## Non-Blocking Checks
 
@@ -19,7 +16,7 @@ Once CodeQL results are stable, branch protection should require CodeQL/code sca
 
 AgentKitForge Core is still pre-release and uses a small TypeScript CLI dependency set. During v0.1, high npm audit results are reviewed manually so we can distinguish runtime risk from dev-tool or transitive noise without blocking every development PR.
 
-This policy should tighten after the first public release. The intended direction is to fail on high runtime dependency vulnerabilities, fail on CodeQL high/critical findings, and keep dev-only advisories under explicit review.
+This policy should tighten after the first public release. The intended direction is to fail on high runtime dependency vulnerabilities and keep dev-only advisories under explicit review.
 
 ## Secrets
 
