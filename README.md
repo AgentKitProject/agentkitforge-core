@@ -22,6 +22,8 @@ The published package includes built `dist/` output. The repository does not com
 - `types`: `dist/index.d.ts`
 - `bin`: `dist/cli/index.js`
 
+Release Please creates GitHub Releases, and the release workflow publishes `@agentkitforge/core` to npm automatically using npm Trusted Publishing.
+
 ## Build
 
 ```bash

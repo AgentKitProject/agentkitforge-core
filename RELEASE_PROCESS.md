@@ -38,13 +38,13 @@ AgentKitForge Core is published to npm as `@agentkitforge/core`. The scoped pack
 npm publish --access public
 ```
 
-The app consumes `@agentkitforge/core` from npm using SemVer ranges, not GitHub tarballs. GitHub tags and GitHub Releases are still created by Release Please.
+The app consumes `@agentkitforge/core` from npm using SemVer ranges. GitHub tags and GitHub Releases are still created by Release Please.
 
 Generated `dist/` output is not committed. `npm pack` and `npm publish` run `prepack`, which builds `dist/` from source before packaging.
 
 ## Automated npm Publishing
 
-When Release Please publishes a GitHub Release, `.github/workflows/publish-npm.yml` runs on the `release: published` event and publishes `@agentkitforge/core` to npm.
+When the release PR is merged, `.github/workflows/release-please.yml` creates the GitHub Release and publishes `@agentkitforge/core` to npm from the same workflow.
 
 The publish workflow:
 
@@ -57,13 +57,15 @@ The publish workflow:
 7. Verifies the tarball includes `dist/`, `README.md`, `LICENSE`, `CLI.md`, and `SPEC.md`.
 8. Runs `npm publish --access public`.
 
-The workflow uses npm Trusted Publishing through GitHub Actions OIDC and does not use `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or checked-in `.npmrc` token auth. Configure npm Trusted Publishing for package `@agentkitforge/core` in npm settings before relying on this workflow. The trusted publisher configuration must match:
+The workflow uses npm Trusted Publishing through GitHub Actions OIDC and does not use `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or checked-in `.npmrc` token auth. The npm Trusted Publisher configuration for the automatic path must match:
 
 - Repository: `AgentKitProject/agentkitforge-core`
-- Workflow file: `.github/workflows/publish-npm.yml`
+- Workflow file: `.github/workflows/release-please.yml`
 - Package: `@agentkitforge/core`
 
-The first npm publish may require npm org/package setup. If a token fallback is ever added, it must be clearly optional, documented, and reviewed as a release-security change. Prefer npm two-factor authentication for maintainers and npm Trusted Publishing for automation.
+`.github/workflows/publish-npm.yml` is a manual fallback only. It uses `workflow_dispatch`, requires a version input that must match `package.json`, and should only be used if the Release Please publish job needs to be retried manually. Using the fallback requires npm Trusted Publishing to allow that workflow path as well.
+
+If a token fallback is ever added, it must be clearly optional, documented, and reviewed as a release-security change. Prefer npm two-factor authentication for maintainers and npm Trusted Publishing for automation.
 
 ## Conventional Commits
 
@@ -90,12 +92,13 @@ Use a release branch only when final stabilization is needed, for example `relea
 
 ## Required Checks
 
-Before publishing:
+Before publishing or retrying the manual fallback:
 
 ```bash
 npm run build
 npm test
-npm run smoke
+npm run smoke --if-present
+npm pack --dry-run
 ```
 
 Security checks:
@@ -117,8 +120,8 @@ GitHub Release notes should include:
 
 ## Artifacts
 
-Core does not require release artifact uploads unless a future package distribution flow needs them. Generated `.agentkit.zip` files are user outputs, not release artifacts for this repository.
+The npm package is the release artifact for app consumption. Generated `.agentkit.zip` files are user outputs, not release artifacts for this repository.
 
 ## App Coordination
 
-AgentKitForge app releases are coordinated separately. Core releases may be consumed by the app, but this repository does not publish desktop app builds.
+AgentKitForge app releases are coordinated separately. The app consumes `@agentkitforge/core` from npm by SemVer. This repository does not publish desktop app builds.

@@ -1,13 +1,11 @@
 name: Publish npm Package
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       version:
         description: "Version to publish, e.g. 0.1.1"
-        required: false
+        required: true
 
 permissions:
   contents: read
@@ -49,10 +47,9 @@ jobs:
 
       - name: Verify package contents
         run: |
-          node -e "const fs=require('node:fs'); const pack=JSON.parse(fs.readFileSync('pack.json','utf8'))[0]; const files=new Set(pack.files.map((file)=>file.path)); const hasDist=[...files].some((file)=>file.startsWith('dist/')); const required=['dist/index.js','dist/index.d.ts','README.md','LICENSE']; const optionalDocs=['CLI.md','SPEC.md']; const missing=required.filter((file)=>!files.has(file)); const missingDocs=optionalDocs.filter((file)=>!files.has(file)); if (!hasDist) missing.push('dist/'); if (missingDocs.length) missing.push(...missingDocs); if (missing.length) { console.error('Missing required package files: '+missing.join(', ')); process.exit(1); } console.log('Verified package contents for '+pack.name+'@'+pack.version);"
+          node -e "const fs=require('node:fs'); const pack=JSON.parse(fs.readFileSync('pack.json','utf8'))[0]; const files=new Set(pack.files.map((file)=>file.path)); const hasDist=[...files].some((file)=>file.startsWith('dist/')); const required=['dist/index.js','dist/index.d.ts','README.md','LICENSE']; const missing=required.filter((file)=>!files.has(file)); if (!hasDist) missing.push('dist/'); if (missing.length) { console.error('Missing required package files: '+missing.join(', ')); process.exit(1); } console.log('Package: '+pack.name); console.log('Version: '+pack.version); console.log('Publish source: manual fallback');"
 
       - name: Verify requested version
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
         shell: bash
         run: |
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"

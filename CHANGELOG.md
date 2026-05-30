@@ -2,18 +2,18 @@
 
 All notable changes to AgentKitForge Core will be documented in this file.
 
-This project follows Semantic Versioning. Before `0.0.0`, minor versions may include breaking changes.
+This project follows Semantic Versioning. Before `1.0.0`, minor versions may include breaking changes.
 
 ## Unreleased
 
 - Added open-source governance, security, contribution, versioning, release, spec, and CLI documentation.
 
-## [0.1.1](https://github.com/BillBoardApp/agentkitforge-core/compare/v0.1.0...v0.1.1) (2026-05-29)
+## [0.1.1](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.1.0...v0.1.1) (2026-05-29)
 
 
 ### Bug Fixes
 
-* make core installable from git ([cd63497](https://github.com/BillBoardApp/agentkitforge-core/commit/cd63497006194ef05b626e64b65f8ea24862eee2))
+* make core installable from source package installs ([cd63497](https://github.com/AgentKitProject/agentkitforge-core/commit/cd63497006194ef05b626e64b65f8ea24862eee2))
 
 ## 1.0.0 (2026-05-29)
 
