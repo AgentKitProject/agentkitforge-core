@@ -1,7 +1,7 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
-import { resolveInside } from "../fs/safety.js";
+import { resolveInside, safeListFilesRecursive } from "../fs/safety.js";
 import { parseSkillMarkdown } from "../validation/skill.js";
 import { readAgentKit } from "../package/reader.js";
 import { listPreparedPrompts } from "../prompts/prompts.js";
@@ -143,17 +143,7 @@ async function listDirectoryFiles(directoryPath: string): Promise<string[]> {
   if (!(await exists(directoryPath))) {
     return [];
   }
-  const entries = await readdir(directoryPath, { withFileTypes: true });
-  const files: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(directoryPath, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listDirectoryFiles(entryPath)));
-    } else if (entry.isFile()) {
-      files.push(entryPath);
-    }
-  }
-  return files.sort();
+  return (await safeListFilesRecursive(directoryPath)).map((file) => file.absolutePath).sort();
 }
 
 async function exists(filePath: string): Promise<boolean> {

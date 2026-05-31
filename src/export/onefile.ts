@@ -1,5 +1,6 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { resolveInside, safeListFilesRecursive } from "../fs/safety.js";
 import { listPreparedPrompts } from "../prompts/prompts.js";
 import type { PreparedPrompt } from "../prompts/schema.js";
 
@@ -14,8 +15,8 @@ export async function exportOneFile(rootPath: string, outFile: string): Promise<
     await appendFileSection(sections, resolvedRoot, file);
   }
 
-  for (const skillFile of await listSkillFiles(path.join(resolvedRoot, "skills"))) {
-    await appendFileSection(sections, resolvedRoot, path.relative(resolvedRoot, skillFile));
+  for (const skillFile of await listSkillFiles(resolvedRoot)) {
+    await appendFileSection(sections, resolvedRoot, skillFile);
   }
 
   for (const directory of OPTIONAL_DIRECTORIES) {
@@ -25,6 +26,7 @@ export async function exportOneFile(rootPath: string, outFile: string): Promise<
   await appendPreparedPromptSections(sections, resolvedRoot);
 
   const resolvedOut = path.resolve(outFile);
+  await mkdir(path.dirname(resolvedOut), { recursive: true });
   await writeFile(resolvedOut, sections.join("\n\n"), "utf8");
   return resolvedOut;
 }
@@ -71,8 +73,8 @@ async function appendDirectorySections(
     return;
   }
 
-  for (const file of await listMarkdownFiles(directoryPath)) {
-    await appendFileSection(sections, rootPath, path.relative(rootPath, file));
+  for (const file of await listMarkdownFiles(rootPath, relativeDirectory)) {
+    await appendFileSection(sections, rootPath, file);
   }
 }
 
@@ -82,56 +84,35 @@ async function appendFileSection(
   relativePath: string
 ): Promise<void> {
   const normalizedRelativePath = relativePath.replaceAll("\\", "/");
-  const content = await readFile(path.join(rootPath, relativePath), "utf8");
+  const content = await readFile(resolveInside(rootPath, relativePath), "utf8");
   sections.push(`<!-- BEGIN ${normalizedRelativePath} -->\n\n${content.trim()}\n\n<!-- END ${normalizedRelativePath} -->`);
 }
 
-async function listSkillFiles(skillsRoot: string): Promise<string[]> {
+async function listSkillFiles(rootPath: string): Promise<string[]> {
+  const skillsRoot = resolveInside(rootPath, "skills");
   if (!(await exists(skillsRoot))) {
     return [];
   }
 
-  const entries = await readdir(skillsRoot, { withFileTypes: true });
-  const skillFiles: string[] = [];
-
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      const skillFile = path.join(skillsRoot, entry.name, "SKILL.md");
-      if (await exists(skillFile)) {
-        skillFiles.push(skillFile);
-      }
-    }
-  }
-
-  return skillFiles.sort();
+  return (await safeListFilesRecursive(skillsRoot))
+    .filter((file) => file.relativePath.split("/").length === 2 && file.relativePath.endsWith("/SKILL.md"))
+    .map((file) => `skills/${file.relativePath}`)
+    .sort();
 }
 
-async function listMarkdownFiles(rootPath: string): Promise<string[]> {
-  const entries = await readdir(rootPath, { withFileTypes: true });
-  const files: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = path.join(rootPath, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listMarkdownFiles(entryPath)));
-    } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".md")) {
-      files.push(entryPath);
-    }
-  }
-
-  return files.sort();
+async function listMarkdownFiles(rootPath: string, relativeDirectory: string): Promise<string[]> {
+  const directoryPath = resolveInside(rootPath, relativeDirectory);
+  return (await safeListFilesRecursive(directoryPath))
+    .filter((file) => file.relativePath.toLowerCase().endsWith(".md"))
+    .map((file) => `${relativeDirectory}/${file.relativePath}`)
+    .sort();
 }
 
 async function exists(filePath: string): Promise<boolean> {
   try {
-    await readdir(filePath);
+    await stat(filePath);
     return true;
   } catch {
-    try {
-      await readFile(filePath);
-      return true;
-    } catch {
-      return false;
-    }
+    return false;
   }
 }

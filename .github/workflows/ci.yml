@@ -8,7 +8,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout
@@ -17,7 +21,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 26
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -28,3 +32,6 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Smoke test CLI workflows
+        run: npm run smoke --if-present
