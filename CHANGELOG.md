@@ -8,6 +8,13 @@ This project follows Semantic Versioning. Before `1.0.0`, minor versions may inc
 
 - Added open-source governance, security, contribution, versioning, release, spec, and CLI documentation.
 
+## [0.2.0](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.1.1...v0.2.0) (2026-05-31)
+
+
+### Features
+
+* harden core cross-platform path handling ([a48650e](https://github.com/AgentKitProject/agentkitforge-core/commit/a48650ec907b954e7f07cab296e33fb9855bd508))
+
 ## [0.1.1](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.1.0...v0.1.1) (2026-05-29)
 
 
