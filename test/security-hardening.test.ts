@@ -1,16 +1,47 @@
 import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import JSZip from "jszip";
 import { describe, expect, test } from "vitest";
 import { exportAgentKitToClaudeCode } from "../src/adapters/claudeCode.js";
 import { exportAgentKitToCodex } from "../src/adapters/codex.js";
+import { loadAgentKitAsDraft } from "../src/app/loadAsDraft.js";
 import { buildAgentKitContext } from "../src/context/builder.js";
 import { renderAgentKitDraft } from "../src/draft/render.js";
+import { exportOneFile } from "../src/export/onefile.js";
+import { assertSafeId, assertSafeRelativePath } from "../src/fs/safety.js";
 import { createAgentKit } from "../src/init/create.js";
 import { packageAgentKit } from "../src/package/packager.js";
 import { validateAgentKit } from "../src/validation/validator.js";
 
 describe("release-blocking filesystem hardening", () => {
+  test("safe relative paths reject unsafe Windows and traversal forms", () => {
+    for (const unsafePath of [
+      "C:foo",
+      "C:\\foo",
+      "C:/foo",
+      "\\\\server\\share\\file",
+      "//server/share/file",
+      "\\\\?\\C:\\foo",
+      "//?/C:/foo",
+      "nested/\0bad.md",
+      "/absolute/file.md",
+      "../escape.md"
+    ]) {
+      expect(() => assertSafeRelativePath(unsafePath), unsafePath).toThrow();
+    }
+
+    expect(() => assertSafeRelativePath("valid/path/file.md")).not.toThrow();
+  });
+
+  test("safe ids reject Windows reserved device names", () => {
+    for (const unsafeId of ["con", "CON", "con.txt", "prn", "aux", "nul", "com1", "lpt1"]) {
+      expect(() => assertSafeId(unsafeId), unsafeId).toThrow();
+    }
+
+    expect(() => assertSafeId("safe-id")).not.toThrow();
+  });
+
   test("manifest skill path traversal fails validation", async () => {
     const kit = await createMinimalKit();
     await writeFile(path.join(kit, "agentkit.yaml"), manifest({ skillPath: "../outside/SKILL.md" }), "utf8");
@@ -69,6 +100,15 @@ describe("release-blocking filesystem hardening", () => {
     const report = await validateAgentKit(kit, "local-valid");
 
     expect(report.valid).toBe(true);
+  });
+
+  test("Windows reserved kit and skill ids fail validation", async () => {
+    const kit = await createMinimalKit();
+    await writeFile(path.join(kit, "agentkit.yaml"), manifest({ id: "con" }), "utf8");
+    expect((await validateAgentKit(kit, "local-valid")).valid).toBe(false);
+
+    await writeFile(path.join(kit, "agentkit.yaml"), manifest({ skillId: "lpt1" }), "utf8");
+    expect((await validateAgentKit(kit, "local-valid")).valid).toBe(false);
   });
 
   test("renderAgentKitDraft rejects unsafe template path", async () => {
@@ -154,6 +194,58 @@ describe("release-blocking filesystem hardening", () => {
     await expect(packageAgentKit(kit, path.join(await tempDir(), "kit.zip"))).rejects.toThrow(
       "symbolic link"
     );
+  });
+
+  test("package zip entries use forward slashes", async () => {
+    const kit = await createMinimalKit();
+    const out = path.join(await tempDir(), "kit.agentkit.zip");
+
+    await packageAgentKit(kit, out);
+
+    const zip = await JSZip.loadAsync(await readFile(out));
+    expect(Object.keys(zip.files)).toContain("skills/first-skill/SKILL.md");
+    expect(Object.keys(zip.files).some((entry) => entry.includes("\\"))).toBe(false);
+  });
+
+  test("one-file export creates output parent directory", async () => {
+    const kit = await createMinimalKit();
+    const out = path.join(await tempDir(), "nested", "bundle.md");
+
+    await exportOneFile(kit, out);
+
+    await expect(readFile(out, "utf8")).resolves.toContain("<!-- BEGIN AGENTKIT.md -->");
+  });
+
+  test("one-file export rejects symlinks when supported by platform", async () => {
+    const kit = await createMinimalKit();
+    await mkdir(path.join(kit, "workflows"));
+    try {
+      await symlink(path.join(kit, "AGENTKIT.md"), path.join(kit, "workflows", "linked.md"));
+    } catch {
+      return;
+    }
+
+    await expect(exportOneFile(kit, path.join(await tempDir(), "bundle.md"))).rejects.toThrow("symbolic link");
+  });
+
+  test("loadAgentKitAsDraft rejects symlinks when supported by platform", async () => {
+    const kit = await createMinimalKit();
+    await mkdir(path.join(kit, "references"));
+    try {
+      await symlink(path.join(kit, "AGENTKIT.md"), path.join(kit, "references", "linked.md"));
+    } catch {
+      return;
+    }
+
+    await expect(loadAgentKitAsDraft(kit)).rejects.toThrow("symbolic link");
+  });
+
+  test("loadAgentKitAsDraft still loads a valid kit with safe traversal", async () => {
+    const kit = await createMinimalKit();
+    const result = await loadAgentKitAsDraft(kit);
+
+    expect(result.draft.id).toBe("safe-kit");
+    expect(result.draft.skills).toHaveLength(1);
   });
 
   test("context builder enforces max files and returns warnings", async () => {

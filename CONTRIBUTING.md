@@ -11,7 +11,7 @@ npm test
 npm run smoke
 ```
 
-Use Node 26 for CI parity.
+Use Node 24 or newer for CI parity.
 
 ## Contribution Scope
 

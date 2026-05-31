@@ -21,10 +21,14 @@ export const DEFAULT_MAX_BYTES = 25 * 1024 * 1024;
 
 const DEFAULT_EXCLUDED_DIRS = new Set([".git", "node_modules", "dist", "build"]);
 const DEFAULT_EXCLUDED_PATHS = ["exports/"];
+const WINDOWS_RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
 
 export function assertSafeId(id: string, label = "id"): void {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) {
     throw new Error(`${label} must use lowercase letters, numbers, and hyphens`);
+  }
+  if (WINDOWS_RESERVED_NAMES.test(id)) {
+    throw new Error(`${label} must not use a Windows reserved device name`);
   }
 }
 
@@ -48,14 +52,23 @@ export function sanitizePathSegment(value: string): string {
 }
 
 export function assertSafeRelativePath(relativePath: string): void {
-  if (!relativePath || relativePath.includes("\0")) {
-    throw new Error("Path must not be empty or contain null bytes");
+  if (!relativePath) {
+    throw new Error("Path must not be empty");
   }
-  if (path.isAbsolute(relativePath) || /^[a-zA-Z]:[\\/]/.test(relativePath)) {
+  if (relativePath.includes("\0")) {
+    throw new Error("Path must not contain null bytes");
+  }
+  const normalized = relativePath.replaceAll("\\", "/");
+  if (normalized.startsWith("//")) {
+    throw new Error(`Path must not use UNC or extended-length syntax: ${relativePath}`);
+  }
+  if (/^[a-zA-Z]:/.test(normalized)) {
+    throw new Error(`Path must not use a Windows drive prefix: ${relativePath}`);
+  }
+  if (path.isAbsolute(relativePath) || path.posix.isAbsolute(normalized)) {
     throw new Error(`Path must be relative: ${relativePath}`);
   }
 
-  const normalized = relativePath.replaceAll("\\", "/");
   if (normalized.split("/").some((part) => part === "..")) {
     throw new Error(`Path must not contain '..': ${relativePath}`);
   }
