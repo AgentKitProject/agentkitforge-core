@@ -8,7 +8,7 @@ on:
 
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: homelab-agentkit-linux-general
     permissions:
       contents: write
       pull-requests: write
@@ -26,7 +26,7 @@ jobs:
   publish-npm:
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: homelab-agentkit-linux-general
     permissions:
       contents: read
       id-token: write

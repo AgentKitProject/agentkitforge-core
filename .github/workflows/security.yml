@@ -15,7 +15,7 @@ permissions:
 jobs:
   npm-audit:
     name: npm audit
-    runs-on: ubuntu-latest
+    runs-on: homelab-agentkit-linux-general
 
     steps:
       - name: Checkout

@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: homelab-agentkit-linux-general
 
     steps:
       - name: Checkout
