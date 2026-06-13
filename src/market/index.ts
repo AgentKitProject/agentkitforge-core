@@ -7,7 +7,11 @@
  * This is the ONLY place in the package that performs network/auth work. The
  * pure spec engine (validate/package/export) must never import from here.
  *
- * Later phases will add submit/download/import operations and CLI commands.
+ * Phase 2 (this update): the MARKET OPERATIONS — submit / download / import,
+ * ported from the Rust hosted-Market client. These reuse the pure spec engine
+ * for validate/package/inspect; the engine never imports back into this module.
+ *
+ * Later phases will add CLI commands and app integration.
  */
 
 export type {
@@ -61,3 +65,48 @@ export {
   type LoginResult,
   type RefreshOptions
 } from "./auth.js";
+
+export {
+  authedRequest,
+  normalizeMarketBaseUrl,
+  DEFAULT_MARKET_BASE_URL,
+  type FetchLike,
+  type FetchLikeResponse,
+  type MarketRequestOptions
+} from "./http.js";
+
+export { forgeMarketRoutes } from "./routes.js";
+
+export {
+  buildMultipartBody,
+  fieldsRequireMultipart,
+  planPackageUpload,
+  sha256Hex,
+  type PresignedUpload,
+  type UploadPlan
+} from "./upload.js";
+
+export {
+  buildForgeUploadRequest,
+  submitKit,
+  type ForgeUploadRequest,
+  type ListingDraft,
+  type SubmitKitOptions,
+  type SubmitKitResult
+} from "./submit.js";
+
+export {
+  assembleProvenance,
+  downloadKit,
+  normalizeMarketIdentifier,
+  type DownloadKitOptions,
+  type DownloadKitResult,
+  type MarketProvenance
+} from "./download.js";
+
+export {
+  extractAgentKitZip,
+  importKit,
+  type ImportKitOptions,
+  type ImportKitResult
+} from "./import.js";
