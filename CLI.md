@@ -200,3 +200,55 @@ agentkitforge export-claude-code ./financial-review --dest ./claude-code-plugins
 ```
 
 This creates `<kit-id>-claude-code-plugin/` with `.claude-plugin/plugin.json`, skills, and supporting kit files. Verify loading behavior with your Claude Code version.
+
+## market
+
+Hosted AgentKitMarket integration (login, submit, import). These are the only
+token-gated commands; all other CLI commands work fully offline. Auth uses the
+WorkOS device flow and a cross-platform token store (OS keyring when available,
+otherwise a `0600` file in the platform config dir).
+
+The hosted Market base URL resolves from a single place, in order:
+`--market-url` flag → `AGENTKITFORGE_MARKET_BASE_URL` env →
+the default `https://market.agentkitproject.com`.
+
+The WorkOS client id resolves from `--client-id` (login only) →
+`AGENTKITPROJECT_WORKOS_CLIENT_ID`. If neither is set, the command exits
+non-zero with: `Forge account connection is not configured. Set
+AGENTKITPROJECT_WORKOS_CLIENT_ID …`.
+
+Connect your account (prints a verification URL + code and polls headlessly):
+
+```bash
+export AGENTKITPROJECT_WORKOS_CLIENT_ID=client_...
+agentkitforge market login
+# or override the client id:
+agentkitforge market login --client-id client_...
+```
+
+Submit a kit (requires a logged-in session; validates with the `publishable`
+profile by default):
+
+```bash
+agentkitforge market submit ./my-kit \
+  --profile publishable \
+  --publisher-id "Jane Doe"
+```
+
+If no `--publisher-id` is given, the connected account's email is used. If the
+session is missing/expired, the command exits non-zero asking you to run
+`agentkitforge market login`.
+
+Import a kit by slug, kit ID, or Market URL:
+
+```bash
+agentkitforge market import my-kit-slug --target ./imported
+```
+
+Prints the imported kit name/version and provenance (source, version, sha256).
+
+Disconnect (clears the stored session):
+
+```bash
+agentkitforge market logout
+```

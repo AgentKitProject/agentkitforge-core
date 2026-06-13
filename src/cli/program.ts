@@ -29,6 +29,7 @@ import {
 } from "../prompts/prompts.js";
 import type { AgentKitValidationProfile } from "../types.js";
 import { validateAgentKit } from "../validation/validator.js";
+import { registerMarketCommands } from "./market.js";
 
 const profiles = ["local-valid", "publishable", "trusted", "verified"];
 const templateNames = ["blank", "financial-review"];
@@ -404,6 +405,8 @@ export function createCliProgram(): Command {
       const result = await bumpAgentKitVersion(kitPath, level as SemverBumpLevel);
       console.log(JSON.stringify(result, null, 2));
     });
+
+  registerMarketCommands(program);
 
   return program;
 }
