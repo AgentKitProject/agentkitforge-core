@@ -56,8 +56,12 @@ export interface ForgeUploadRequest {
 export interface SubmitKitOptions extends MarketRequestOptions {
   /** Path to the Agent Kit root folder to submit. */
   rootPath: string;
-  /** The publisher's AgentKitProfile display name (server-resolved upstream). */
-  publisherId: string;
+  /**
+   * Optional publisher hint. The Market server authoritatively resolves the
+   * publisher from the authenticated user's AgentKitProfile and ignores this
+   * value, so it is not required and defaults to empty.
+   */
+  publisherId?: string;
   /** Override the listing draft; otherwise derived from the kit summary. */
   listingDraft?: Partial<ListingDraft>;
   /** Override the package file name; default derived from id+version. */
@@ -168,12 +172,10 @@ export async function submitKit(
   const reqOptions: MarketRequestOptions = { ...options, marketBaseUrl };
   const fetchImpl = options.fetch ?? (fetch as unknown as FetchLike);
 
-  const publisherId = options.publisherId?.trim();
-  if (!publisherId) {
-    throw new Error(
-      "AgentKitProfile display name is required for Market submission."
-    );
-  }
+  // The server resolves the publisher from the authenticated user's profile and
+  // ignores any value we send, so we do not gate on it here (and must not — that
+  // gate previously forced a redundant client-side display-name fetch).
+  const publisherId = options.publisherId?.trim() ?? "";
 
   const validationReport = await validateAgentKit(options.rootPath, "publishable");
   if (!validationReport.valid) {
