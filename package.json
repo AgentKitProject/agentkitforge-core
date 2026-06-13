@@ -17,6 +17,7 @@
       "types": "./dist/market/index.d.ts",
       "default": "./dist/market/index.js"
     },
+    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "files": [
