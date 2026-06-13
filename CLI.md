@@ -73,6 +73,31 @@ Create a `.agentkit.zip` package.
 agentkitforge package ./my-kit --out ./my-kit.agentkit.zip
 ```
 
+## version
+
+Read or update the `version` field in a kit's `agentkit.yaml` manifest. Updates
+preserve comments, key order, and the rest of the manifest formatting.
+
+Read the current version:
+
+```bash
+agentkitforge version get ./my-kit
+```
+
+Set an explicit semantic version (must be valid SemVer 2.0.0):
+
+```bash
+agentkitforge version set ./my-kit 1.2.3
+```
+
+Bump by level (`major`, `minor`, or `patch`):
+
+```bash
+agentkitforge version bump ./my-kit patch
+```
+
+`set` and `bump` print `{ "previous": "...", "next": "..." }`.
+
 ## export-onefile
 
 Create a one-file Markdown bundle.

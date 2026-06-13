@@ -17,6 +17,12 @@ import { createAgentKit } from "../init/create.js";
 import type { AgentKitTemplateName } from "../init/templates.js";
 import { packageAgentKit } from "../package/packager.js";
 import {
+  bumpAgentKitVersion,
+  getAgentKitVersion,
+  setAgentKitVersion
+} from "../package/version.js";
+import type { SemverBumpLevel } from "../package/version.js";
+import {
   listPreparedPrompts,
   renderPreparedPrompt,
   validatePreparedPromptInputs
@@ -28,6 +34,7 @@ const profiles = ["local-valid", "publishable", "trusted", "verified"];
 const templateNames = ["blank", "financial-review"];
 const contextModes = ["all", "triggered"];
 const contextTargets = ["openai", "chatgpt", "claude", "generic"];
+const bumpLevels = ["major", "minor", "patch"];
 
 export function createCliProgram(): Command {
   const program = new Command()
@@ -364,6 +371,39 @@ export function createCliProgram(): Command {
         console.log(JSON.stringify(result, null, 2));
       }
     );
+
+  const version = program
+    .command("version")
+    .description("Read or update an Agent Kit manifest version");
+
+  version
+    .command("get")
+    .argument("<path>", "Agent Kit folder")
+    .action(async (kitPath: string) => {
+      console.log(await getAgentKitVersion(kitPath));
+    });
+
+  version
+    .command("set")
+    .argument("<path>", "Agent Kit folder")
+    .argument("<version>", "New semantic version, e.g. 1.2.3")
+    .action(async (kitPath: string, nextVersion: string) => {
+      const result = await setAgentKitVersion(kitPath, nextVersion);
+      console.log(JSON.stringify(result, null, 2));
+    });
+
+  version
+    .command("bump")
+    .argument("<path>", "Agent Kit folder")
+    .argument("<level>", "Bump level: major|minor|patch")
+    .action(async (kitPath: string, level: string) => {
+      if (!bumpLevels.includes(level)) {
+        throw new Error(`Invalid bump level: ${level}`);
+      }
+
+      const result = await bumpAgentKitVersion(kitPath, level as SemverBumpLevel);
+      console.log(JSON.stringify(result, null, 2));
+    });
 
   return program;
 }

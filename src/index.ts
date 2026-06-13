@@ -64,6 +64,13 @@ export {
   preparedPromptSchema
 } from "./prompts/schema.js";
 export { readAgentKit, readYamlFile } from "./package/reader.js";
+export {
+  bumpAgentKitVersion,
+  getAgentKitVersion,
+  isValidAgentKitVersion,
+  setAgentKitVersion
+} from "./package/version.js";
+export type { SemverBumpLevel, SetAgentKitVersionResult } from "./package/version.js";
 export { validateAgentKit } from "./validation/validator.js";
 export { parseSkillMarkdown, validateSkillFile } from "./validation/skill.js";
 export type { AgentKitTemplateName } from "./init/templates.js";
