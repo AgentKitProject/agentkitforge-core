@@ -18,6 +18,7 @@ import path from "node:path";
 import { getDefaultPackageName } from "../artifacts/naming.js";
 import { getAgentKitSummary } from "../app/summary.js";
 import { packageAgentKit } from "../package/packager.js";
+import { getAgentKitVersion } from "../package/version.js";
 import { validateAgentKit } from "../validation/validator.js";
 import type { ValidationReport } from "../types.js";
 
@@ -108,17 +109,19 @@ export async function buildForgeUploadRequest(
   listingOverride?: Partial<ListingDraft>
 ): Promise<ForgeUploadRequest> {
   const summary = await getAgentKitSummary(rootPath);
+  // Use the canonical sequential version (legacy semver normalized to "1"),
+  // not the raw manifest value, so submissions carry the displayed vN scheme.
+  const version = await getAgentKitVersion(rootPath);
   const description = summary.description ?? "";
   const firstLine = description
     .split("\n")
     .map((line) => line.trim())
     .find((line) => line.length > 0);
   const fileName =
-    fileNameOverride ??
-    getDefaultPackageName({ id: summary.id, version: summary.version });
+    fileNameOverride ?? getDefaultPackageName({ id: summary.id, version });
   return {
     fileName,
-    version: summary.version,
+    version,
     publisherId: publisherId.trim(),
     listingDraft: {
       name: listingOverride?.name ?? summary.name,
