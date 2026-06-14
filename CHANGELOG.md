@@ -8,6 +8,18 @@ This project follows Semantic Versioning. Before `1.0.0`, minor versions may inc
 
 - Added open-source governance, security, contribution, versioning, release, spec, and CLI documentation.
 
+## [0.3.0](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.2.0...v0.3.0) (2026-06-14)
+
+
+### Features
+
+* add read/update Agent Kit manifest version API and CLI ([4aca592](https://github.com/AgentKitProject/agentkitforge-core/commit/4aca592d49d8bdbf5308b2ac48e5bc7ac0cea3c3))
+* **cli:** add market login/logout/submit/import commands + cross-platform store tests ([242d404](https://github.com/AgentKitProject/agentkitforge-core/commit/242d404f0d497d3acbc2d9ba02a340ee480ff166))
+* **market:** add core auth foundation (token store + WorkOS device-auth) ([5f92904](https://github.com/AgentKitProject/agentkitforge-core/commit/5f92904bea5068ed87bcf92a03147b8aab454032))
+* **market:** add read-only update-check capability (Bridge 5 core half) ([116823b](https://github.com/AgentKitProject/agentkitforge-core/commit/116823b97d3dcea61f6d1ea74a9af8f9b8fbc901))
+* **market:** consume @agentkitforge/contracts; fix update-check route ([283d401](https://github.com/AgentKitProject/agentkitforge-core/commit/283d4013238c002cdcf0993ab15480d581a01cb6))
+* switch kit content version from semver to sequential vN integer ([b286520](https://github.com/AgentKitProject/agentkitforge-core/commit/b2865200f90b024cac09f58e215753373b432c0f))
+
 ## [0.2.0](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.1.1...v0.2.0) (2026-05-31)
 
 

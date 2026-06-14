@@ -1,6 +1,6 @@
 {
   "name": "@agentkitforge/core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Core package, validation, export, and packaging engine for AgentKitForge.",
   "type": "module",
   "bin": {
