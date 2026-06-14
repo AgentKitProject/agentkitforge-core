@@ -110,3 +110,9 @@ export {
   type ImportKitOptions,
   type ImportKitResult
 } from "./import.js";
+
+export {
+  checkKitUpdate,
+  type CheckKitUpdateOptions,
+  type KitUpdateStatus
+} from "./update.js";

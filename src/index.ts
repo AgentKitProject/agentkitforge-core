@@ -69,6 +69,7 @@ export {
   getAgentKitVersion,
   isValidAgentKitVersion,
   nextAgentKitVersion,
+  normalizeVersionToInt,
   setAgentKitVersion
 } from "./package/version.js";
 export type { SetAgentKitVersionResult } from "./package/version.js";

@@ -58,6 +58,17 @@ function normalizeVersion(value: unknown): string {
   return "1";
 }
 
+/**
+ * Normalize any raw `version` value to its canonical positive integer.
+ *
+ * Mirrors {@link normalizeVersion} (legacy/non-integer → 1) but returns a
+ * `number` for ordering comparisons (e.g. update checks). Exported so callers
+ * compare versions without re-implementing the legacy-normalization rule.
+ */
+export function normalizeVersionToInt(value: unknown): number {
+  return Number(normalizeVersion(value));
+}
+
 function manifestPathFor(rootPath: string): string {
   return path.join(path.resolve(rootPath), "agentkit.yaml");
 }
