@@ -13,7 +13,9 @@ permissions:
 
 jobs:
   publish:
-    runs-on: homelab-agentkit-linux-general
+    # npm provenance requires a GitHub-hosted runner (self-hosted is rejected with E422);
+    # also keeps NPM_TOKEN off the homelab runners. Free for public repos.
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout

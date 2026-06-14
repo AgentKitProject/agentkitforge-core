@@ -26,7 +26,9 @@ jobs:
   publish-npm:
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
-    runs-on: homelab-agentkit-linux-general
+    # npm provenance requires a GitHub-hosted runner (self-hosted is rejected with E422);
+    # also keeps NPM_TOKEN off the homelab runners. Free for public repos.
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
