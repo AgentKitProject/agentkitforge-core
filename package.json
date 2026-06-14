@@ -53,6 +53,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@agentkitforge/contracts": "^0.2.0",
     "commander": "^14.0.2",
     "jszip": "^3.10.1",
     "yaml": "^2.8.2",

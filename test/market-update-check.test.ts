@@ -1,4 +1,8 @@
 import { describe, expect, test, vi } from "vitest";
+import {
+  forgeMarketRoutes,
+  publicKitDetailResponseSchema
+} from "@agentkitforge/contracts";
 
 import { checkKitUpdate } from "../src/market/update.js";
 import { normalizeVersionToInt } from "../src/package/version.js";
@@ -16,17 +20,28 @@ function jsonResponse(status: number, body: unknown): FetchLikeResponse {
   };
 }
 
-/** Public kit-detail body matching market-infra `toPublicKitDetail`. */
+/**
+ * Public kit-detail body matching market-infra `toPublicKitDetail`.
+ *
+ * Built to satisfy `publicKitDetailResponseSchema` from
+ * `@agentkitforge/contracts` so these stubs exercise the same envelope the
+ * production endpoint returns (and that `checkKitUpdate` now validates).
+ */
 function detail(currentVersion: string | null, latestVersion?: string | null) {
-  return {
+  const body = {
     item: {
       kitId: "kit_1",
       slug: "demo",
+      name: "Demo Kit",
+      summary: "A demo kit",
       currentVersion,
       latestVersion:
         latestVersion === undefined ? null : { version: latestVersion }
     }
   };
+  // Contract guard: every stub must match the published schema shape.
+  expect(publicKitDetailResponseSchema.safeParse(body).success).toBe(true);
+  return body;
 }
 
 describe("checkKitUpdate", () => {
@@ -191,7 +206,27 @@ describe("checkKitUpdate", () => {
     expect(status.reason).toBe("error");
   });
 
-  test("GETs the tokenless public /kits/{slug} endpoint", async () => {
+  test("200 with body failing the contract schema => reason error", async () => {
+    // Valid JSON but missing required PublicKitDetail fields (name/summary).
+    const fetchStub: FetchLike = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(200, { item: { kitId: "k", slug: "s", currentVersion: "3" } })
+      );
+    const status = await checkKitUpdate({
+      marketBaseUrl: BASE,
+      slug: "demo",
+      installedVersion: "1",
+      fetch: fetchStub
+    });
+    expect(status).toEqual({
+      available: false,
+      updateAvailable: false,
+      reason: "error"
+    });
+  });
+
+  test("GETs the tokenless public proxy route forgeMarketRoutes.kitDetail", async () => {
     const fetchStub = vi.fn().mockResolvedValue(jsonResponse(200, detail("1")));
     await checkKitUpdate({
       marketBaseUrl: BASE,
@@ -200,7 +235,11 @@ describe("checkKitUpdate", () => {
       fetch: fetchStub as unknown as FetchLike
     });
     const [url, init] = fetchStub.mock.calls[0];
-    expect(url).toBe(`${BASE}/kits/demo-kit`);
+    // Asserts the contract path, not a hand-written string.
+    expect(forgeMarketRoutes.kitDetail("demo-kit")).toBe(
+      "/api/forge/kits/demo-kit"
+    );
+    expect(url).toBe(`${BASE}${forgeMarketRoutes.kitDetail("demo-kit")}`);
     expect(init?.method).toBe("GET");
     expect(init?.headers).toBeUndefined();
   });
@@ -214,7 +253,9 @@ describe("checkKitUpdate", () => {
       fetch: fetchStub as unknown as FetchLike
     });
     expect(status.updateAvailable).toBe(true);
-    expect(fetchStub.mock.calls[0][0]).toBe(`${BASE}/kits/demo`);
+    expect(fetchStub.mock.calls[0][0]).toBe(
+      `${BASE}${forgeMarketRoutes.kitDetail("demo")}`
+    );
   });
 });
 

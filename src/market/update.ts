@@ -13,6 +13,11 @@
  * `error` reason so the app can surface "couldn't check" gracefully.
  */
 
+import {
+  forgeMarketRoutes,
+  publicKitDetailResponseSchema
+} from "@agentkitforge/contracts";
+
 import { normalizeVersionToInt } from "../package/version.js";
 import { normalizeMarketBaseUrl, type FetchLike } from "./http.js";
 import { normalizeMarketIdentifier } from "./download.js";
@@ -45,16 +50,8 @@ export interface CheckKitUpdateOptions {
   fetch?: FetchLike;
 }
 
-/** Public kit-detail envelope, narrowed to the fields we read. */
-interface PublicKitDetailEnvelope {
-  item?: {
-    currentVersion?: string | null;
-    latestVersion?: { version?: string | null } | null;
-  };
-}
-
 /**
- * Extract the latest PUBLISHED version string from a public kit-detail body.
+ * Extract the latest PUBLISHED version string from a validated kit-detail item.
  *
  * The market backend (`toPublicKitDetail`) exposes the latest published version
  * two ways: the top-level `item.currentVersion` pointer, and the resolved
@@ -62,10 +59,10 @@ interface PublicKitDetailEnvelope {
  * `currentVersion`). We prefer `currentVersion`, falling back to
  * `latestVersion.version`.
  */
-function extractLatestVersion(body: unknown): string | undefined {
-  if (!body || typeof body !== "object") return undefined;
-  const item = (body as PublicKitDetailEnvelope).item;
-  if (!item || typeof item !== "object") return undefined;
+function extractLatestVersion(item: {
+  currentVersion?: string | null;
+  latestVersion?: { version?: string | null } | null;
+}): string | undefined {
   const current = item.currentVersion;
   if (typeof current === "string" && current.trim().length > 0) {
     return current.trim();
@@ -80,7 +77,9 @@ function extractLatestVersion(body: unknown): string | undefined {
 /**
  * Check whether an installed Market kit has a newer published version.
  *
- * GETs the public `/kits/{slug}` (no auth). Maps:
+ * GETs the public proxy route `/api/forge/kits/{slug}` (no auth) — the JSON
+ * detail endpoint exposed by the Market app (the bare `/kits/{slug}` is an HTML
+ * page). Maps:
  * - 200 with a usable version → `{ available, latestVersion, updateAvailable, reason: "ok" }`
  * - 200 but no published version → `{ available: false, reason: "unavailable" }`
  * - 404 / not public → `{ available: false, reason: "not_found" }`
@@ -99,7 +98,7 @@ export async function checkKitUpdate(
   }
 
   const fetchImpl = options.fetch ?? (fetch as unknown as FetchLike);
-  const endpoint = `${marketBaseUrl}/kits/${encodeURIComponent(slug)}`;
+  const endpoint = `${marketBaseUrl}${forgeMarketRoutes.kitDetail(slug)}`;
 
   let response;
   try {
@@ -122,7 +121,12 @@ export async function checkKitUpdate(
     return { available: false, updateAvailable: false, reason: "error" };
   }
 
-  const latestRaw = extractLatestVersion(body);
+  const parsed = publicKitDetailResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    return { available: false, updateAvailable: false, reason: "error" };
+  }
+
+  const latestRaw = extractLatestVersion(parsed.data.item);
   if (latestRaw === undefined) {
     return { available: false, updateAvailable: false, reason: "unavailable" };
   }
