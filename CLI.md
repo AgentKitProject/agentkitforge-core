@@ -75,28 +75,31 @@ agentkitforge package ./my-kit --out ./my-kit.agentkit.zip
 
 ## version
 
-Read or update the `version` field in a kit's `agentkit.yaml` manifest. Updates
-preserve comments, key order, and the rest of the manifest formatting.
+Read or update the kit's CONTENT `version` in `agentkit.yaml`. The content
+version is a sequential positive integer (`1`, `2`, `3`, …) displayed as `vN`.
+It is unrelated to `schemaVersion` (the spec format version). Updates preserve
+comments, key order, and the rest of the manifest formatting.
 
-Read the current version:
+Read the current version (prints `vN`; legacy semver kits read as `v1`):
 
 ```bash
 agentkitforge version get ./my-kit
 ```
 
-Set an explicit semantic version (must be valid SemVer 2.0.0):
+Set an explicit version (must be a positive integer; displayed `vN`):
 
 ```bash
-agentkitforge version set ./my-kit 1.2.3
+agentkitforge version set ./my-kit 2
 ```
 
-Bump by level (`major`, `minor`, or `patch`):
+Auto-increment the version by 1 (legacy semver normalizes to `1` first, so its
+next is `2`):
 
 ```bash
-agentkitforge version bump ./my-kit patch
+agentkitforge version next ./my-kit
 ```
 
-`set` and `bump` print `{ "previous": "...", "next": "..." }`.
+`set` and `next` print `{ "previous": "...", "next": "..." }`.
 
 ## export-onefile
 

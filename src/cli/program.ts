@@ -17,11 +17,11 @@ import { createAgentKit } from "../init/create.js";
 import type { AgentKitTemplateName } from "../init/templates.js";
 import { packageAgentKit } from "../package/packager.js";
 import {
-  bumpAgentKitVersion,
+  formatDisplayVersion,
   getAgentKitVersion,
+  nextAgentKitVersion,
   setAgentKitVersion
 } from "../package/version.js";
-import type { SemverBumpLevel } from "../package/version.js";
 import {
   listPreparedPrompts,
   renderPreparedPrompt,
@@ -35,7 +35,6 @@ const profiles = ["local-valid", "publishable", "trusted", "verified"];
 const templateNames = ["blank", "financial-review"];
 const contextModes = ["all", "triggered"];
 const contextTargets = ["openai", "chatgpt", "claude", "generic"];
-const bumpLevels = ["major", "minor", "patch"];
 
 export function createCliProgram(): Command {
   const program = new Command()
@@ -375,34 +374,30 @@ export function createCliProgram(): Command {
 
   const version = program
     .command("version")
-    .description("Read or update an Agent Kit manifest version");
+    .description("Read or update an Agent Kit manifest content version");
 
   version
     .command("get")
     .argument("<path>", "Agent Kit folder")
     .action(async (kitPath: string) => {
-      console.log(await getAgentKitVersion(kitPath));
+      console.log(formatDisplayVersion(await getAgentKitVersion(kitPath)));
     });
 
   version
     .command("set")
     .argument("<path>", "Agent Kit folder")
-    .argument("<version>", "New semantic version, e.g. 1.2.3")
+    .argument("<version>", "New version, a positive integer e.g. 2 (displayed v2)")
     .action(async (kitPath: string, nextVersion: string) => {
       const result = await setAgentKitVersion(kitPath, nextVersion);
       console.log(JSON.stringify(result, null, 2));
     });
 
   version
-    .command("bump")
+    .command("next")
     .argument("<path>", "Agent Kit folder")
-    .argument("<level>", "Bump level: major|minor|patch")
-    .action(async (kitPath: string, level: string) => {
-      if (!bumpLevels.includes(level)) {
-        throw new Error(`Invalid bump level: ${level}`);
-      }
-
-      const result = await bumpAgentKitVersion(kitPath, level as SemverBumpLevel);
+    .description("Auto-increment the content version by 1")
+    .action(async (kitPath: string) => {
+      const result = await nextAgentKitVersion(kitPath);
       console.log(JSON.stringify(result, null, 2));
     });
 

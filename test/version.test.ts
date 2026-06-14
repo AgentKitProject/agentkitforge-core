@@ -3,18 +3,20 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
 import {
-  bumpAgentKitVersion,
+  formatDisplayVersion,
   getAgentKitVersion,
   isValidAgentKitVersion,
+  nextAgentKitVersion,
   setAgentKitVersion
 } from "../src/package/version.js";
 
-const MANIFEST_WITH_COMMENTS = `# Agent Kit manifest
+function manifestWithVersion(version: string): string {
+  return `# Agent Kit manifest
 schemaVersion: "0.1"
 kind: AgentKit
 id: commented-kit
 name: Commented Kit
-version: "0.1.0" # current published version
+version: ${version} # current published version
 description: A kit with comments and varied fields.
 author:
   name: AgentKitForge Test # the author
@@ -36,6 +38,10 @@ skills:
     triggers:
       - summarize text
 `;
+}
+
+const SEQUENTIAL_MANIFEST = manifestWithVersion(`"3"`);
+const LEGACY_SEMVER_MANIFEST = manifestWithVersion(`"0.1.0"`);
 
 async function tempKitWith(manifest: string): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), "agentkit-version-"));
@@ -44,35 +50,83 @@ async function tempKitWith(manifest: string): Promise<string> {
 }
 
 describe("Agent Kit version API", () => {
-  test("getAgentKitVersion returns the current version", async () => {
-    const kit = await tempKitWith(MANIFEST_WITH_COMMENTS);
-    await expect(getAgentKitVersion(kit)).resolves.toBe("0.1.0");
+  test("getAgentKitVersion returns the current sequential version", async () => {
+    const kit = await tempKitWith(SEQUENTIAL_MANIFEST);
+    await expect(getAgentKitVersion(kit)).resolves.toBe("3");
   });
 
-  test("setAgentKitVersion updates the version and returns previous/next", async () => {
-    const kit = await tempKitWith(MANIFEST_WITH_COMMENTS);
-    const result = await setAgentKitVersion(kit, "1.2.3");
-    expect(result).toEqual({ previous: "0.1.0", next: "1.2.3" });
-    await expect(getAgentKitVersion(kit)).resolves.toBe("1.2.3");
+  test("getAgentKitVersion normalizes legacy semver to 1", async () => {
+    const kit = await tempKitWith(LEGACY_SEMVER_MANIFEST);
+    await expect(getAgentKitVersion(kit)).resolves.toBe("1");
   });
 
-  test("setAgentKitVersion rejects invalid semver with a clear error", async () => {
-    const kit = await tempKitWith(MANIFEST_WITH_COMMENTS);
-    await expect(setAgentKitVersion(kit, "not-a-version")).rejects.toThrow(
-      /Semantic Versioning/
-    );
+  test("getAgentKitVersion reads a raw YAML integer version", async () => {
+    const kit = await tempKitWith(manifestWithVersion("5"));
+    await expect(getAgentKitVersion(kit)).resolves.toBe("5");
+  });
+
+  test("setAgentKitVersion updates and returns previous/next", async () => {
+    const kit = await tempKitWith(SEQUENTIAL_MANIFEST);
+    const result = await setAgentKitVersion(kit, 4);
+    expect(result).toEqual({ previous: "3", next: "4" });
+    await expect(getAgentKitVersion(kit)).resolves.toBe("4");
+  });
+
+  test("setAgentKitVersion accepts a numeric-string version", async () => {
+    const kit = await tempKitWith(SEQUENTIAL_MANIFEST);
+    await expect(setAgentKitVersion(kit, "7")).resolves.toEqual({
+      previous: "3",
+      next: "7"
+    });
+  });
+
+  test("setAgentKitVersion rejects non-positive-integer values", async () => {
+    const kit = await tempKitWith(SEQUENTIAL_MANIFEST);
+    for (const bad of ["0", "-1", "1.5", "01", "v2", "1.2.3", "abc"]) {
+      await expect(setAgentKitVersion(kit, bad)).rejects.toThrow(
+        /positive integer/
+      );
+    }
     // Manifest unchanged on rejection.
-    await expect(getAgentKitVersion(kit)).resolves.toBe("0.1.0");
+    await expect(getAgentKitVersion(kit)).resolves.toBe("3");
+  });
+
+  test("nextAgentKitVersion auto-increments by 1", async () => {
+    const kit = await tempKitWith(SEQUENTIAL_MANIFEST);
+    await expect(nextAgentKitVersion(kit)).resolves.toEqual({
+      previous: "3",
+      next: "4"
+    });
+    await expect(getAgentKitVersion(kit)).resolves.toBe("4");
+  });
+
+  test("nextAgentKitVersion migrates legacy semver to v1 then increments to v2", async () => {
+    const kit = await tempKitWith(LEGACY_SEMVER_MANIFEST);
+    await expect(nextAgentKitVersion(kit)).resolves.toEqual({
+      previous: "1",
+      next: "2"
+    });
+    const updated = await readFile(path.join(kit, "agentkit.yaml"), "utf8");
+    expect(updated).toContain('version: "2"');
+    expect(updated).not.toContain("0.1.0");
+  });
+
+  test("setAgentKitVersion normalizes a legacy semver previous to 1", async () => {
+    const kit = await tempKitWith(LEGACY_SEMVER_MANIFEST);
+    await expect(setAgentKitVersion(kit, 5)).resolves.toEqual({
+      previous: "1",
+      next: "5"
+    });
   });
 
   test("round-trip preserves comments, key order, and other fields", async () => {
-    const kit = await tempKitWith(MANIFEST_WITH_COMMENTS);
-    await setAgentKitVersion(kit, "2.0.0");
+    const kit = await tempKitWith(SEQUENTIAL_MANIFEST);
+    await setAgentKitVersion(kit, 9);
     const updated = await readFile(path.join(kit, "agentkit.yaml"), "utf8");
 
-    // Version was changed (and stays a quoted string).
-    expect(updated).toContain('version: "2.0.0"');
-    expect(updated).not.toContain('version: "0.1.0"');
+    // Version changed and stays a quoted string.
+    expect(updated).toContain('version: "9"');
+    expect(updated).not.toContain('version: "3"');
 
     // Comments preserved.
     expect(updated).toContain("# Agent Kit manifest");
@@ -87,6 +141,9 @@ describe("Agent Kit version API", () => {
     expect(idx("version:")).toBeLessThan(idx("description:"));
     expect(idx("description:")).toBeLessThan(idx("author:"));
 
+    // schemaVersion untouched.
+    expect(updated).toContain('schemaVersion: "0.1"');
+
     // Other fields untouched.
     expect(updated).toContain("id: commented-kit");
     expect(updated).toContain("setupLevel: low");
@@ -99,36 +156,30 @@ describe("Agent Kit version API", () => {
   });
 
   test("getAgentKitVersion errors cleanly when version field is absent", async () => {
-    const kit = await tempKitWith("schemaVersion: \"0.1\"\nname: No Version\n");
-    await expect(getAgentKitVersion(kit)).rejects.toThrow(/missing a string `version`/);
+    const kit = await tempKitWith('schemaVersion: "0.1"\nname: No Version\n');
+    await expect(getAgentKitVersion(kit)).rejects.toThrow(
+      /missing a `version`/
+    );
   });
 
-  test("isValidAgentKitVersion accepts and rejects per semver", () => {
-    expect(isValidAgentKitVersion("1.2.3")).toBe(true);
-    expect(isValidAgentKitVersion("0.0.0")).toBe(true);
-    expect(isValidAgentKitVersion("1.2.3-rc.1+build.5")).toBe(true);
-    expect(isValidAgentKitVersion("1.2")).toBe(false);
-    expect(isValidAgentKitVersion("01.2.3")).toBe(false);
-    expect(isValidAgentKitVersion("v1.2.3")).toBe(false);
+  test("isValidAgentKitVersion accepts positive integers only", () => {
+    expect(isValidAgentKitVersion("1")).toBe(true);
+    expect(isValidAgentKitVersion("42")).toBe(true);
+    expect(isValidAgentKitVersion(2)).toBe(true);
+    expect(isValidAgentKitVersion("0")).toBe(false);
+    expect(isValidAgentKitVersion(0)).toBe(false);
+    expect(isValidAgentKitVersion("-1")).toBe(false);
+    expect(isValidAgentKitVersion("01")).toBe(false);
+    expect(isValidAgentKitVersion("1.0")).toBe(false);
+    expect(isValidAgentKitVersion(1.5)).toBe(false);
+    expect(isValidAgentKitVersion("1.2.3")).toBe(false);
+    expect(isValidAgentKitVersion("v1")).toBe(false);
   });
 
-  test("bumpAgentKitVersion increments each level", async () => {
-    const major = await tempKitWith(MANIFEST_WITH_COMMENTS);
-    await expect(bumpAgentKitVersion(major, "major")).resolves.toEqual({
-      previous: "0.1.0",
-      next: "1.0.0"
-    });
-
-    const minor = await tempKitWith(MANIFEST_WITH_COMMENTS);
-    await expect(bumpAgentKitVersion(minor, "minor")).resolves.toEqual({
-      previous: "0.1.0",
-      next: "0.2.0"
-    });
-
-    const patch = await tempKitWith(MANIFEST_WITH_COMMENTS);
-    await expect(bumpAgentKitVersion(patch, "patch")).resolves.toEqual({
-      previous: "0.1.0",
-      next: "0.1.1"
-    });
+  test("formatDisplayVersion renders vN and migrates legacy values to v1", () => {
+    expect(formatDisplayVersion("1")).toBe("v1");
+    expect(formatDisplayVersion(3)).toBe("v3");
+    expect(formatDisplayVersion("0.1.0")).toBe("v1");
+    expect(formatDisplayVersion("garbage")).toBe("v1");
   });
 });

@@ -62,7 +62,7 @@ export async function getAgentKitSummary(kitPath: string): Promise<AgentKitSumma
   return {
     id: kit.manifest.id,
     name: kit.manifest.name,
-    version: kit.manifest.version,
+    version: String(kit.manifest.version),
     description: kit.manifest.description,
     domain: typeof kit.manifest.domain === "string" ? kit.manifest.domain : undefined,
     targetUsers: Array.isArray(kit.manifest.targetUsers)

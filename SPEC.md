@@ -53,7 +53,13 @@ Required fields:
 - `kind`
 - `id`
 - `name`
-- `version`
+- `version` — the kit's CONTENT version: a sequential positive integer
+  (`1`, `2`, `3`, …) starting at `1`, displayed to authors as `vN` (`v1`,
+  `v2`, …). Stored as a quoted string in `agentkit.yaml` (e.g. `version: "1"`)
+  and auto-incremented when an author publishes a new revision. This is
+  distinct from `schemaVersion` (the spec FORMAT version, currently `"0.1"`),
+  which it does not affect. Legacy kits carrying a semver `version` (e.g.
+  `"0.1.0"`) are treated as `v1` and normalized to `"1"` on the next write.
 - `description`
 - `author.name`
 - `license`

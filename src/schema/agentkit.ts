@@ -30,7 +30,12 @@ export const agentKitManifestSchema = z
     kind: z.string().min(1),
     id: safeIdSchema,
     name: z.string().min(1),
-    version: z.string().min(1),
+    // Content version: canonically a sequential positive-integer string
+    // ("1","2",…), displayed as vN. Legacy kits may still carry a semver
+    // string (e.g. "0.1.0") or a raw YAML integer; both are accepted here and
+    // normalized to v1 by the version API. schemaVersion (spec format) is
+    // separate and unaffected.
+    version: z.union([z.string().min(1), z.number().int().positive()]),
     description: z.string().min(1),
     author: z.object({
       name: z.string().min(1)
