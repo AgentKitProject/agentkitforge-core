@@ -13,9 +13,11 @@ import { Command } from "commander";
 
 import { getAgentKitSummary } from "../app/summary.js";
 import {
+  checkEntitlement,
   createDefaultTokenStore,
   DEFAULT_MARKET_BASE_URL,
   ensureAccessToken,
+  fetchLicensedKit,
   importKit,
   login,
   logout,
@@ -23,6 +25,8 @@ import {
   submitKit,
   type DeviceLoginPrompt
 } from "../market/index.js";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 const profiles = ["local-valid", "publishable", "trusted", "verified"];
 
@@ -191,6 +195,92 @@ export function registerMarketCommands(program: Command): void {
         console.log(`Source:   ${result.provenance.source}`);
         console.log(`Version:  ${result.provenance.version ?? "unknown"}`);
         console.log(`sha256:   ${result.provenance.sha256 ?? "unknown"}`);
+      }
+    );
+
+  async function ensureConnected(clientId: string) {
+    const store = createDefaultTokenStore();
+    try {
+      await ensureAccessToken(store, { clientId });
+    } catch (error) {
+      if (error instanceof ReconnectRequiredError) {
+        throw new ReconnectRequiredError(
+          "Not connected to hosted AgentKitMarket. Run `agentkitforge market login` first."
+        );
+      }
+      throw error;
+    }
+    return store;
+  }
+
+  market
+    .command("entitlement")
+    .description("Check whether you hold an active entitlement for a Market kit")
+    .argument("<slugOrIdOrUrl>", "Market kit slug, kit ID, or Market URL")
+    .option("--market-url <url>", "Hosted Market base URL")
+    .action(async (slugOrIdOrUrl: string, options: { marketUrl?: string }) => {
+      const clientId = resolveClientId();
+      const marketBaseUrl = resolveMarketBaseUrl(options.marketUrl);
+      const store = await ensureConnected(clientId);
+      const result = await checkEntitlement(store, {
+        clientId,
+        marketBaseUrl,
+        slug: slugOrIdOrUrl
+      });
+      console.log(`Kit:         ${result.kitId ?? result.slug}`);
+      console.log(`Pricing:     ${result.pricing}`);
+      console.log(`Downloadable:${result.downloadable ? " yes" : " no"}`);
+      console.log(`Online-only: ${result.onlineOnly ? "yes" : "no"}`);
+      console.log(`Entitled:    ${result.entitled ? "yes" : "no"}`);
+    });
+
+  market
+    .command("licensed-fetch")
+    .description(
+      "Fetch a licensed (paid) kit's watermarked package. Online-only kits are " +
+        "held in memory and CANNOT be saved; downloadable paid kits may be saved with --out."
+    )
+    .argument("<slugOrIdOrUrl>", "Market kit slug, kit ID, or Market URL")
+    .option("--market-url <url>", "Hosted Market base URL")
+    .option("--out <file>", "Save the watermarked .agentkit.zip (downloadable paid kits only)")
+    .action(
+      async (slugOrIdOrUrl: string, options: { marketUrl?: string; out?: string }) => {
+        const clientId = resolveClientId();
+        const marketBaseUrl = resolveMarketBaseUrl(options.marketUrl);
+        const store = await ensureConnected(clientId);
+
+        const result = await fetchLicensedKit(store, {
+          clientId,
+          marketBaseUrl,
+          slug: slugOrIdOrUrl
+        });
+
+        console.log(`Kit:         ${result.kitId}`);
+        console.log(`File:        ${result.fileName}`);
+        console.log(`Size:        ${result.bytes.length} bytes`);
+        console.log(`sha256:      ${result.sha256}`);
+        console.log(`Pricing:     ${result.pricing}`);
+        console.log(`Online-only: ${result.onlineOnly ? "yes" : "no"}`);
+        if (result.watermark) {
+          console.log(`Watermark:   ${result.watermark.hash}`);
+        }
+
+        if (options.out) {
+          if (result.onlineOnly) {
+            throw new Error(
+              "This kit is online-only and cannot be saved or exported. " +
+                "Online-only kits are held in memory only."
+            );
+          }
+          const outPath = path.resolve(options.out);
+          await mkdir(path.dirname(outPath), { recursive: true });
+          await writeFile(outPath, result.bytes);
+          console.log(`Saved watermarked package to: ${outPath}`);
+        } else {
+          console.log(
+            "(in-memory only; pass --out to save a downloadable paid kit's watermarked package)"
+          );
+        }
       }
     );
 }

@@ -8,4 +8,4 @@
  * download / update consumers all share one canonical Seam-A shape.
  */
 
-export { forgeMarketRoutes } from "@agentkitforge/contracts";
+export { forgeMarketRoutes, forgePricingRoutes } from "@agentkitforge/contracts";

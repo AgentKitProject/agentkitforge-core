@@ -75,7 +75,18 @@ export {
   type MarketRequestOptions
 } from "./http.js";
 
-export { forgeMarketRoutes } from "./routes.js";
+export { forgeMarketRoutes, forgePricingRoutes } from "./routes.js";
+
+export {
+  checkEntitlement,
+  fetchLicensedKit,
+  isOnlineOnly,
+  type CheckEntitlementOptions,
+  type EntitlementStatusResult,
+  type FetchLicensedKitOptions,
+  type FetchLicensedKitResult,
+  type LicensedWatermark
+} from "./licensed.js";
 
 export {
   buildMultipartBody,
