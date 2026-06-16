@@ -8,6 +8,13 @@ This project follows Semantic Versioning. Before `1.0.0`, minor versions may inc
 
 - Added open-source governance, security, contribution, versioning, release, spec, and CLI documentation.
 
+## [0.5.0](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.4.0...v0.5.0) (2026-06-16)
+
+
+### Features
+
+* **market:** add cloud favorites client (list/add/remove) ([8429f5d](https://github.com/AgentKitProject/agentkitforge-core/commit/8429f5dc986259839d59a27f66bdac777581f73e))
+
 ## [0.4.0](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.3.0...v0.4.0) (2026-06-16)
 
 
