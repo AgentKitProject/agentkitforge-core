@@ -9,3 +9,15 @@
  */
 
 export { forgeMarketRoutes, forgePricingRoutes } from "@agentkitforge/contracts";
+
+/**
+ * Forge cloud-favorites routes (Seam A). LIVE in Market prod but not yet in
+ * `@agentkitforge/contracts`; declared locally until promoted into contracts.
+ */
+export const forgeFavoriteRoutes = {
+  /** GET (list) / POST (add) the signed-in user's favorites. */
+  list: (): string => "/api/forge/favorites",
+  /** DELETE a single favorite by kit id. */
+  remove: (kitId: string): string =>
+    `/api/forge/favorites/${encodeURIComponent(kitId)}`
+} as const;

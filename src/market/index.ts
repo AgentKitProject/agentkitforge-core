@@ -75,7 +75,23 @@ export {
   type MarketRequestOptions
 } from "./http.js";
 
-export { forgeMarketRoutes, forgePricingRoutes } from "./routes.js";
+export {
+  forgeMarketRoutes,
+  forgePricingRoutes,
+  forgeFavoriteRoutes
+} from "./routes.js";
+
+export {
+  listFavorites,
+  addFavorite,
+  removeFavorite,
+  normalizeFavorite,
+  type Favorite,
+  type FavoriteTarget,
+  type ListFavoritesOptions,
+  type AddFavoriteOptions,
+  type RemoveFavoriteOptions
+} from "./favorites.js";
 
 export {
   checkEntitlement,

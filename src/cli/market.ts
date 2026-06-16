@@ -19,6 +19,9 @@ import {
   ensureAccessToken,
   fetchLicensedKit,
   importKit,
+  listFavorites,
+  addFavorite,
+  removeFavorite,
   login,
   logout,
   ReconnectRequiredError,
@@ -283,4 +286,52 @@ export function registerMarketCommands(program: Command): void {
         }
       }
     );
+
+  const favorites = market
+    .command("favorites")
+    .description("Cloud favorites (opt-in; requires an AgentKitProject session)");
+
+  favorites
+    .command("list")
+    .description("List your synced cloud favorites")
+    .option("--market-url <url>", "Hosted Market base URL")
+    .action(async (options: { marketUrl?: string }) => {
+      const clientId = resolveClientId();
+      const marketBaseUrl = resolveMarketBaseUrl(options.marketUrl);
+      const store = await ensureConnected(clientId);
+      const items = await listFavorites(store, { clientId, marketBaseUrl });
+      if (items.length === 0) {
+        console.log("No cloud favorites.");
+        return;
+      }
+      for (const fav of items) {
+        console.log(`${fav.displayName ?? fav.slug} (${fav.slug})`);
+      }
+    });
+
+  favorites
+    .command("add")
+    .description("Add a cloud favorite by slug, kit ID, or URL")
+    .argument("<slugOrIdOrUrl>", "Market kit slug, kit ID, or Market URL")
+    .option("--market-url <url>", "Hosted Market base URL")
+    .action(async (slugOrIdOrUrl: string, options: { marketUrl?: string }) => {
+      const clientId = resolveClientId();
+      const marketBaseUrl = resolveMarketBaseUrl(options.marketUrl);
+      const store = await ensureConnected(clientId);
+      await addFavorite(store, { slug: slugOrIdOrUrl }, { clientId, marketBaseUrl });
+      console.log(`Favorited: ${slugOrIdOrUrl}`);
+    });
+
+  favorites
+    .command("remove")
+    .description("Remove a cloud favorite by kit ID")
+    .argument("<kitId>", "Market kit ID")
+    .option("--market-url <url>", "Hosted Market base URL")
+    .action(async (kitId: string, options: { marketUrl?: string }) => {
+      const clientId = resolveClientId();
+      const marketBaseUrl = resolveMarketBaseUrl(options.marketUrl);
+      const store = await ensureConnected(clientId);
+      await removeFavorite(store, kitId, { clientId, marketBaseUrl });
+      console.log(`Removed favorite: ${kitId}`);
+    });
 }
