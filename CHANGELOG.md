@@ -8,6 +8,13 @@ This project follows Semantic Versioning. Before `1.0.0`, minor versions may inc
 
 - Added open-source governance, security, contribution, versioning, release, spec, and CLI documentation.
 
+## [0.4.0](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.3.0...v0.4.0) (2026-06-16)
+
+
+### Features
+
+* **market:** online-only paid/licensed kit client (fetchLicensedKit, entitlements) ([3ecf865](https://github.com/AgentKitProject/agentkitforge-core/commit/3ecf865747c1e01c2d9ef3e0270a2476b2155373))
+
 ## [0.3.0](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.2.0...v0.3.0) (2026-06-14)
 
 
