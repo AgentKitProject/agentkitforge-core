@@ -17,6 +17,10 @@
       "types": "./dist/market/index.d.ts",
       "default": "./dist/market/index.js"
     },
+    "./gateway": {
+      "types": "./dist/gateway/index.d.ts",
+      "default": "./dist/gateway/index.js"
+    },
     "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },

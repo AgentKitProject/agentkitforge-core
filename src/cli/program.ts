@@ -30,6 +30,7 @@ import {
 import type { AgentKitValidationProfile } from "../types.js";
 import { validateAgentKit } from "../validation/validator.js";
 import { registerMarketCommands } from "./market.js";
+import { registerGatewayCommands } from "./gateway.js";
 
 const profiles = ["local-valid", "publishable", "trusted", "verified"];
 const templateNames = ["blank", "financial-review"];
@@ -402,6 +403,7 @@ export function createCliProgram(): Command {
     });
 
   registerMarketCommands(program);
+  registerGatewayCommands(program);
 
   return program;
 }
