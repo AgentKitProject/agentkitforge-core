@@ -7,6 +7,7 @@ This project follows Semantic Versioning. Before `1.0.0`, minor versions may inc
 ## Unreleased
 
 - Added open-source governance, security, contribution, versioning, release, spec, and CLI documentation.
+- **market:** `normalizeMarketBaseUrl` now honors an operator-configured Market base URL (any valid http/https URL) instead of locking to `market.agentkitproject.com`, so the tokenless kit update-check works against self-hosted Markets.
 
 ## [0.6.0](https://github.com/AgentKitProject/agentkitforge-core/compare/v0.5.0...v0.6.0) (2026-06-19)
 
