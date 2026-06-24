@@ -114,8 +114,25 @@ describe("market base URL normalization", () => {
       "https://market.agentkitproject.com"
     );
   });
-  test("rejects other hosts", () => {
-    expect(() => normalizeMarketBaseUrl("https://evil.example.com")).toThrow();
+  test("honors a self-host base URL", () => {
+    expect(normalizeMarketBaseUrl("https://market.example.com")).toBe(
+      "https://market.example.com"
+    );
+    expect(normalizeMarketBaseUrl("https://market.tailf14b5e.ts.net")).toBe(
+      "https://market.tailf14b5e.ts.net"
+    );
+  });
+  test("strips trailing slashes", () => {
+    expect(normalizeMarketBaseUrl("https://market.example.com/")).toBe(
+      "https://market.example.com"
+    );
+    expect(normalizeMarketBaseUrl("http://localhost:3000///")).toBe(
+      "http://localhost:3000"
+    );
+  });
+  test("rejects non-http(s) and unparseable URLs", () => {
+    expect(() => normalizeMarketBaseUrl("ftp://market.example.com")).toThrow();
+    expect(() => normalizeMarketBaseUrl("not a url")).toThrow();
   });
 });
 

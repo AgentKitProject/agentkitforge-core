@@ -46,8 +46,6 @@ export interface MarketRequestOptions extends EnsureAccessTokenOptions {
 
 export const DEFAULT_MARKET_BASE_URL = "https://market.agentkitproject.com";
 
-const ALLOWED_MARKET_HOST = "market.agentkitproject.com";
-
 function resolveFetch(custom?: FetchLike): FetchLike {
   if (custom) return custom;
   if (typeof fetch === "function") {
@@ -57,9 +55,17 @@ function resolveFetch(custom?: FetchLike): FetchLike {
 }
 
 /**
- * Validate + normalize the hosted-Market base URL. Mirrors the Rust
- * `normalize_hosted_market_base_url`: only https://market.agentkitproject.com
- * is accepted for direct hosted-Market traffic.
+ * Validate + normalize the Market base URL. Honors the operator-configured
+ * Market URL so self-hosted Markets work (e.g. https://market.example.com):
+ * any syntactically-valid http(s) base URL is accepted and returned with
+ * trailing slashes stripped. When no base URL is supplied, defaults to the
+ * canonical hosted Market ({@link DEFAULT_MARKET_BASE_URL}).
+ *
+ * Note: the previous host-lock (canonical host only) existed as a guard so
+ * device-auth bearer tokens were never sent to an arbitrary host. That guard
+ * is no longer needed here: the tokenless update-check must work on self-host,
+ * and on self-host the token-bearing paths are inert (device-bearer auth
+ * returns 501). Operators are responsible for the URL they configure.
  */
 export function normalizeMarketBaseUrl(baseUrl?: string): string {
   const trimmed = baseUrl?.trim();
@@ -69,14 +75,12 @@ export function normalizeMarketBaseUrl(baseUrl?: string): string {
   try {
     parsed = new URL(candidate);
   } catch {
-    throw new Error("Hosted Market base URL is invalid.");
+    throw new Error("Market base URL is invalid.");
   }
-  if (parsed.protocol !== "https:" || parsed.host !== ALLOWED_MARKET_HOST) {
-    throw new Error(
-      "Direct hosted Market import only supports https://market.agentkitproject.com."
-    );
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("Market base URL must use http or https.");
   }
-  return DEFAULT_MARKET_BASE_URL;
+  return candidate.replace(/\/+$/, "");
 }
 
 /**
